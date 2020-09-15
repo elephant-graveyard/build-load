@@ -148,6 +148,8 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, name string, config BuildRunSe
 		return nil, err
 	}
 
+	defer deleteContainerImage(kubeAccess, config.TargetRegistrySecretRef, *buildRun)
+
 	taskRun, err := lookUpTaskRun(kubeAccess.DynClient, config.Namespace, *buildRun)
 	if err != nil {
 		return nil, err

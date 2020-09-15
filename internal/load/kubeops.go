@@ -293,3 +293,33 @@ func deleteResource(kubeAccess KubeAccess, resource schema.GroupVersionResource,
 		}
 	}
 }
+
+func lookUpDockerCredentialsFromSecret(kubeAccess KubeAccess, namespace string, secretRef string) (string, string, error) {
+	secret, err := kubeAccess.Client.CoreV1().Secrets(namespace).Get(secretRef, metav1.GetOptions{})
+	if err != nil {
+		return "", "", err
+	}
+
+	jsonData, ok := secret.Data[".dockerconfigjson"]
+	if !ok {
+		return "", "", fmt.Errorf("failed to find docker configuration in secret %s", secret.Name)
+	}
+
+	var dockerconfig struct {
+		Auths map[string]struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+			Auth     string `json:"auth"`
+		} `json:"auths"`
+	}
+
+	if err := json.Unmarshal(jsonData, &dockerconfig); err != nil {
+		return "", "", err
+	}
+
+	for _, entry := range dockerconfig.Auths {
+		return entry.Username, entry.Password, nil
+	}
+
+	return "", "", fmt.Errorf("failed to find authentication credentials in secret data")
+}
