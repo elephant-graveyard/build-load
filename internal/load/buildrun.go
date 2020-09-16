@@ -116,12 +116,25 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parall
 
 	resourcesForClusterBuildStrategy := estimateResourceRequests(*clusterBuildStrategy, int64(parallel))
 
-	bunt.Printf("Keep in mind, with Moccasin{_%s_}, the estimated resource request will be roughly Azure{%v CPU cores} and Wheat{%v system memory}. Available in the cluster are SlateGray{%v CPU cores} and LightSlateGray{%v system memory}\n\n",
+	scaleToString := func(q *resource.Quantity) string {
+		var mods = []string{"Byte", "KiB", "MiB", "GiB", "TiB"}
+
+		tmp := float64(q.Value())
+
+		var i = 0
+		for i = 0; tmp > 1023.9 && i < len(mods); i++ {
+			tmp /= 1024.0
+		}
+
+		return fmt.Sprintf("%.1f %s", tmp, mods[i])
+	}
+
+	bunt.Printf("Keep in mind, with Moccasin{_%s_}, the estimated resource request will be roughly SlateGray{%v CPU cores} and LightSlateGray{%v system memory}. Available in the cluster are SlateGray{%v CPU cores} and LightSlateGray{%v system memory}.\n\n",
 		text.Plural(parallel, "concurrent buildrun"),
 		resourcesForClusterBuildStrategy.Cpu(),
-		resourcesForClusterBuildStrategy.Memory(),
+		scaleToString(resourcesForClusterBuildStrategy.Memory()),
 		totalNodeResources.Cpu(),
-		totalNodeResources.Memory(),
+		scaleToString(totalNodeResources.Memory()),
 	)
 
 	return nil
