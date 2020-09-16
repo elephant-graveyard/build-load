@@ -2,6 +2,8 @@
 
 Create synthetic load for [shipwright-io/build](https://github.com/shipwright-io/build)
 
+![build-load](.docs/example-output.png?raw=true "build-load example output")
+
 ## Examples
 
 ### Kaniko buildrun
