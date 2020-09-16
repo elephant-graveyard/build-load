@@ -22,30 +22,71 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 
-	buildv1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gonvenience/wrap"
 )
 
-func deleteContainerImage(kubeAccess KubeAccess, secretRef string, buildRun buildv1.BuildRun) error {
-	username, password, err := lookUpDockerCredentialsFromSecret(kubeAccess, buildRun.Namespace, secretRef)
+type ibmCloudIdentityToken struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int64  `json:"expires_in"`
+	Expiration   int64  `json:"expiration"`
+	Scope        string `json:"scope"`
+}
+
+func deleteContainerImage(kubeAccess KubeAccess, namespace string, secretRef string, imageURL string) error {
+	username, password, err := lookUpDockerCredentialsFromSecret(kubeAccess, namespace, secretRef)
 	if err != nil {
 		return err
 	}
 
-	host, org, repo, tag, err := parseImageURL(buildRun.Status.BuildSpec.Output.ImageURL)
+	host, org, repo, tag, err := parseImageURL(imageURL)
 	if err != nil {
 		return err
 	}
 
-	switch host {
-	case "docker.io":
+	switch {
+	case strings.Contains(host, "docker.io"):
 		token, err := dockerV2Login("hub.docker.com", username, password)
 		if err != nil {
 			return err
 		}
 
 		return dockerV2Delete("hub.docker.com", token, org, repo, tag)
+
+	case strings.Contains(host, "icr.io"):
+		if username != "iamapikey" {
+			return fmt.Errorf("failed to delete image %s, because %s/%s does not contain an IBM API key", imageURL, namespace, secretRef)
+		}
+
+		identityToken, err := getIBMCloudIdentityToken(password)
+		if err != nil {
+			return err
+		}
+
+		var bss string
+		_, _ = jwt.Parse(identityToken.AccessToken, func(t *jwt.Token) (interface{}, error) {
+			switch obj := t.Claims.(type) {
+			case jwt.MapClaims:
+				if account, ok := obj["account"]; ok {
+					switch accountMap := account.(type) {
+					case map[string]interface{}:
+						switch tmp := accountMap["bss"].(type) {
+						case string:
+							bss = tmp
+						}
+					}
+				}
+			}
+
+			return nil, nil
+		})
+
+		return icrDelete(*identityToken, bss, imageURL)
 	}
 
 	return nil
@@ -138,5 +179,91 @@ func dockerV2Delete(host string, token string, org string, repo string, tag stri
 
 	default:
 		return fmt.Errorf("failed with HTTP status code %d: %s", resp.StatusCode, string(respData))
+	}
+}
+
+func getIBMCloudIdentityToken(apikey string) (*ibmCloudIdentityToken, error) {
+	data := fmt.Sprintf("grant_type=%s&apikey=%s",
+		url.QueryEscape("urn:ibm:params:oauth:grant-type:apikey"),
+		apikey,
+	)
+
+	req, err := http.NewRequest("POST", "https://iam.cloud.ibm.com/identity/token", strings.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		var identityToken ibmCloudIdentityToken
+		if err := json.Unmarshal(body, &identityToken); err != nil {
+			return nil, err
+		}
+
+		return &identityToken, nil
+
+	default:
+		var responseMsg map[string]interface{}
+		if err := json.Unmarshal(body, &responseMsg); err != nil {
+			return nil, err
+		}
+
+		const context = "failed to obtain identity token from IAM"
+
+		errorCode, errorCodeFound := responseMsg["errorCode"]
+		errorMessage, errorMessageFound := responseMsg["errorMessage"]
+		if errorCodeFound && errorMessageFound {
+			return nil, wrap.Error(
+				fmt.Errorf("%v: %v", errorCode, errorMessage),
+				context,
+			)
+		}
+
+		return nil, wrap.Error(fmt.Errorf(string(body)), context)
+	}
+}
+
+func icrDelete(identityToken ibmCloudIdentityToken, accountID string, imageName string) error {
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("https://us.icr.io/api/v1/images/%s", url.QueryEscape(imageName)), nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Account", accountID)
+	req.Header.Set("Authorization", fmt.Sprintf("%s %s", identityToken.TokenType, identityToken.AccessToken))
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	msg, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+
+	default:
+		return fmt.Errorf("failed to delete image %s: %s", imageName, string(msg))
 	}
 }

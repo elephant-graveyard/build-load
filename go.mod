@@ -5,6 +5,7 @@ go 1.15
 require (
 	cloud.google.com/go v0.57.0 // indirect
 	github.com/aws/aws-sdk-go v1.31.6 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/gonvenience/bunt v1.1.1
