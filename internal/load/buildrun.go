@@ -253,6 +253,26 @@ func ExecuteSeriesOfParallelBuildRuns(kubeAccess KubeAccess, config BuildRunSett
 	return results, nil
 }
 
+// ExecuteTestPlan executes the given test plan step by step
+func ExecuteTestPlan(kubeAccess KubeAccess, testplan TestPlan) error {
+	for i, step := range testplan.Steps {
+		bunt.Printf("Running test plan step %d/%d: LightSlateGray{%s}, build type *%s* using cluster build strategy _%s_ to build CornflowerBlue{~%s~}\n",
+			i+1,
+			len(testplan.Steps),
+			step.Name,
+			step.BuildRunSettings.BuildType,
+			step.BuildRunSettings.ClusterBuildStrategy,
+			step.BuildRunSettings.Source.URL,
+		)
+
+		if _, err := ExecuteSingleBuildRun(kubeAccess, step.Name, step.BuildRunSettings); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func estimateResourceRequests(clusterBuildStrategy buildv1.ClusterBuildStrategy, concurrent int64) corev1.ResourceList {
 	var (
 		maxCPU *resource.Quantity

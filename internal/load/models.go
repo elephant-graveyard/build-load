@@ -77,3 +77,11 @@ type BuildRunSettings struct {
 		RegistryNamespace string `yaml:"registryNamespace"`
 	} `yaml:"output"`
 }
+
+// TestPlan is a plan with steps that define tests
+type TestPlan struct {
+	Steps []struct {
+		Name             string           `yaml:"name"`
+		BuildRunSettings BuildRunSettings `yaml:"buildRunConfig"`
+	} `yaml:"steps"`
+}
