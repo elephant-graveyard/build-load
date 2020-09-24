@@ -1,0 +1,32 @@
+---
+language: go
+go:
+- 1.15.x
+
+os: linux
+dist: xenial
+
+cache:
+  directories:
+  - $GOPATH/pkg/mod
+
+install:
+- curl --silent --location https://goo.gl/g1CpPX | bash -s v1.3.0
+
+script:
+- export GO111MODULE=on
+- go build ./...
+
+before_deploy:
+- make build
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: vYFShKvAo2k9rnn93J+edovDIrxbDSP73Ay2zf67+r6QSGywIZY0GdxCRTfxeGmudHT0BtaB36YwNCzd+EVB9YMnmctAKX1GTRPrdKkUB4BN71vU/F8x0A8hBM/pLI1ml9dPhFu3Wr6APIiVvnbq3rUmvh/Tin/DDVLbKGCiwSEcNV+NJcTvbJx7DC6DsF9DXcLPfN1gepgd0c46h2iWSG5L/e6h6L+zs23ZGhkgvpgM0gj9ZCAYrYCfCTsGS9ExniTAg1prAAdAC9kTZz4y0lmdOc4hRAoWP7i8SotTFwEjEQKTA4wPJNeaXYTn4xWapPVV7S5g8GvaT7kPL2Rzpf/eDOIyBVS7Tm/uJ0DgEpMJfciaxFTm69SDuLbWzXHQtvCQ6aKXFKlpOvBwnYM+uzhztLYE9Uw5EsM8tHaVRzUVyVmuAYsveLXKU6tUSzEHxN5tNDWCRRAxPQjtXGSSoAa1QIF7GPvh+acPZXCYPwCj/YaGnUFpSrIDDeZyA4t8+7cumas4uXemmuWZ8DsMzZ3XXZT/GuDHnPP6HH4F3eMHwbQn0lGOBYoF2wT2st9rZuHEOZjYKWkPbZIosedLdWDMOnZnrZVHXX+zXutTed/gwnko9cwGx1M0mUOUHElDQXAHa/RsKNNgy9qyzBCAAdSV+AYJeqzctFF4ehWix2E=
+  file_glob: true
+  file: binaries/*
+  on:
+    condition: $TRAVIS_GO_VERSION =~ ^1\.15
+    tags: true
