@@ -72,15 +72,15 @@ func applyBuildRunSettingsFlags(cmd *cobra.Command, config *load.BuildRunSetting
 	pf.StringVar(&config.Name, "name", "test", "name to used for kube resources")
 	pf.StringVar(&config.Prefix, "prefix", "load", "prefix for kube resource names")
 
-	pf.StringVar(&config.SourceURL, "source-url", "", "specify source URL to build from")
-	pf.StringVar(&config.SourceContextDir, "source-context", "/", "specify directory to be used in the source repository")
-	pf.StringVar(&config.SourceSecret, "source-secret", "", "specify secret to be used to access the source")
+	pf.StringVar(&config.Source.URL, "source-url", "", "specify source URL to build from")
+	pf.StringVar(&config.Source.ContextDir, "source-context", "/", "specify directory to be used in the source repository")
+	pf.StringVar(&config.Source.SecretRef, "source-secret", "", "specify secret to be used to access the source")
 
-	pf.StringVar(&config.Dockerfile, "dockerfile", "Dockerfile", "specify name of the docker file for kaniko builds")
+	pf.StringVar(&config.Source.Dockerfile, "dockerfile", "Dockerfile", "specify name of the docker file for kaniko builds")
 
-	pf.StringVar(&config.TargetRegistryHostname, "output-registry-hostname", "", "output registry hostname")
-	pf.StringVar(&config.TargetRegistryNamespace, "output-registry-namespace", "", "output registry namespace")
-	pf.StringVar(&config.TargetRegistrySecretRef, "output-registry-secret-ref", "", "secret that contains the access credentials for the output registry")
+	pf.StringVar(&config.Output.RegistryHostname, "output-registry-hostname", "", "output registry hostname")
+	pf.StringVar(&config.Output.RegistryNamespace, "output-registry-namespace", "", "output registry namespace")
+	pf.StringVar(&config.Output.SecretRef, "output-registry-secret-ref", "", "secret that contains the access credentials for the output registry")
 
 	cobra.MarkFlagRequired(pf, "build-type")
 	cobra.MarkFlagRequired(pf, "source-url")

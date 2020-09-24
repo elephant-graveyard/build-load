@@ -54,22 +54,26 @@ type BuildRunResult struct {
 // BuildRunSettings contains all required settings for a buildrun
 type BuildRunSettings struct {
 	// type settings
-	ClusterBuildStrategy string
-	BuildType            string
+	ClusterBuildStrategy string `yaml:"clusterBuildStrategy"`
+	BuildType            string `yaml:"buildType"`
 
 	// location and test resource naming settings
-	Namespace string
-	Prefix    string
-	Name      string
+	Namespace string `yaml:"namespace"`
+	Prefix    string `yaml:"prefix"`
+	Name      string `yaml:"name"`
 
 	// build source settings
-	SourceURL        string
-	SourceContextDir string
-	Dockerfile       string
-	SourceSecret     string
+	Source struct {
+		SecretRef  string `yaml:"secretRef"`
+		URL        string `yaml:"url"`
+		ContextDir string `yaml:"contextDir"`
+		Dockerfile string `yaml:"dockerfile"`
+	} `yaml:"source"`
 
-	// build target settings
-	TargetRegistryHostname  string
-	TargetRegistryNamespace string
-	TargetRegistrySecretRef string
+	// build output settings
+	Output struct {
+		SecretRef         string `yaml:"secretRef"`
+		RegistryHostname  string `yaml:"registryHostname"`
+		RegistryNamespace string `yaml:"registryNamespace"`
+	} `yaml:"output"`
 }

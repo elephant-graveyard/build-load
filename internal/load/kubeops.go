@@ -53,8 +53,8 @@ func newBuild(name string, config BuildRunSettings) buildv1.Build {
 
 		Spec: buildv1.BuildSpec{
 			Source: buildv1.GitSource{
-				URL:        config.SourceURL,
-				ContextDir: &config.SourceContextDir,
+				URL:        config.Source.URL,
+				ContextDir: &config.Source.ContextDir,
 			},
 
 			StrategyRef: &buildv1.StrategyRef{
@@ -64,8 +64,8 @@ func newBuild(name string, config BuildRunSettings) buildv1.Build {
 
 			Output: buildv1.Image{
 				ImageURL: fmt.Sprintf("%s/%s/%s",
-					config.TargetRegistryHostname,
-					config.TargetRegistryNamespace,
+					config.Output.RegistryHostname,
+					config.Output.RegistryNamespace,
 					name,
 				),
 			},
@@ -73,23 +73,23 @@ func newBuild(name string, config BuildRunSettings) buildv1.Build {
 	}
 
 	// Optional: source registry access credentials
-	if len(config.SourceSecret) > 0 {
+	if len(config.Source.SecretRef) > 0 {
 		build.Spec.Source.SecretRef = &corev1.LocalObjectReference{
-			Name: config.SourceSecret,
+			Name: config.Source.SecretRef,
 		}
 	}
 
 	// Optional: target/output registry access credentials
-	if len(config.TargetRegistrySecretRef) > 0 {
+	if len(config.Output.SecretRef) > 0 {
 		build.Spec.Output.SecretRef = &corev1.LocalObjectReference{
-			Name: config.TargetRegistrySecretRef,
+			Name: config.Output.SecretRef,
 		}
 	}
 
 	// build type specific spec updates
 	switch config.BuildType {
 	case "kaniko":
-		build.Spec.Dockerfile = &config.Dockerfile
+		build.Spec.Dockerfile = &config.Source.Dockerfile
 
 	case "buildpacks":
 		// nothing additional to set
