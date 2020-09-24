@@ -32,6 +32,7 @@ require (
 	google.golang.org/api v0.25.0 // indirect
 	google.golang.org/genproto v0.0.0-20200527145253-8367513e4ece // indirect
 	gopkg.in/ini.v1 v1.56.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20191120175047-4206685974f2
 	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
 	k8s.io/api v0.17.6
 	k8s.io/apimachinery v0.17.6

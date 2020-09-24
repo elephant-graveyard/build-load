@@ -17,10 +17,14 @@ limitations under the License.
 package load
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/gonvenience/wrap"
 	buildv1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -176,7 +180,7 @@ func waitForBuildRunCompletion(kubeAccess KubeAccess, namespace string, name str
 						}
 
 					case corev1.ConditionFalse:
-						return nil, fmt.Errorf(buildRun.Status.Reason)
+						return nil, buildRunError(kubeAccess, *buildRun)
 					}
 				}
 			}
@@ -322,4 +326,55 @@ func lookUpDockerCredentialsFromSecret(kubeAccess KubeAccess, namespace string, 
 	}
 
 	return "", "", fmt.Errorf("failed to find authentication credentials in secret data")
+}
+
+func buildRunError(kubeAccess KubeAccess, buildRun buildv1.BuildRun) error {
+	if buildRun.Status.Succeeded == corev1.ConditionTrue {
+		return nil
+	}
+
+	if buildRun.Status.LatestTaskRunRef != nil {
+		if taskRun, err := lookUpTaskRun(kubeAccess.DynClient, buildRun.Namespace, buildRun); err == nil {
+			if taskRunPod, err := lookUpPod(kubeAccess.Client, buildRun.Namespace, *taskRun); err == nil {
+				var buf bytes.Buffer
+
+				for _, container := range append(taskRunPod.Spec.InitContainers, taskRunPod.Spec.Containers...) {
+					reader, err := kubeAccess.Client.
+						CoreV1().
+						RESTClient().
+						Get().
+						Namespace(taskRunPod.Namespace).
+						Name(taskRunPod.Name).
+						Resource("pods").
+						SubResource("log").
+						Param("container", container.Name).
+						Stream()
+
+					if err == nil {
+						defer reader.Close()
+
+						var scanner = bufio.NewScanner(reader)
+						for scanner.Scan() {
+							for _, line := range strings.Split(scanner.Text(), "\n") {
+								fmt.Fprintf(&buf, "[%s] %s\n", container.Name, line)
+							}
+						}
+					}
+				}
+
+				return wrap.Errorf(
+					fmt.Errorf(buf.String()),
+					"buildRun %s failed",
+					buildRun.Name,
+				)
+			}
+		}
+	}
+
+	// default error with not much more details other than the status reason
+	return wrap.Errorf(
+		fmt.Errorf(buildRun.Status.Reason),
+		"buildRun %s failed",
+		buildRun.Name,
+	)
 }
