@@ -151,44 +151,43 @@ func applyUnstructured(dynClient dynamic.Interface, namespace string, resource s
 }
 
 func waitForBuildRunCompletion(kubeAccess KubeAccess, namespace string, name string) (*buildv1.BuildRun, error) {
-	watcher, err := kubeAccess.DynClient.Resource(BuildRunResource).Namespace(namespace).Watch(metav1.ListOptions{})
+	// The code used to use the client-go watcher to listen to all the events
+	// that came in for a specific buildRun to eventually decide whether it
+	// succeeded or failed. However, under certain high load conditions, some
+	// of the events went missing. The buildRun was done, but the code did not
+	// pick it up. Therefore, the code was changed to this polling style.
+
+	var ticker = time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if buildRun, err := lookUpBuildRun(kubeAccess, namespace, name); err == nil {
+				switch buildRun.Status.Succeeded {
+				case corev1.ConditionTrue:
+					if buildRun.Status.CompletionTime != nil {
+						return buildRun, nil
+					}
+
+				case corev1.ConditionFalse:
+					return nil, buildRunError(kubeAccess, *buildRun)
+				}
+			}
+
+		case <-time.After(defaultBuildRunWaitTimeout):
+			return nil, fmt.Errorf("timeout occurred while waiting for buildrun %s to complete", name)
+		}
+	}
+}
+
+func lookUpBuildRun(kubeAccess KubeAccess, namespace string, name string) (*buildv1.BuildRun, error) {
+	obj, err := kubeAccess.DynClient.Resource(BuildRunResource).Namespace(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	defer watcher.Stop()
-
-	timeout := time.After(defaultBuildRunWaitTimeout)
-
-	for {
-		select {
-		case event := <-watcher.ResultChan():
-			switch event.Type {
-			case watch.Modified:
-				obj := event.Object.(*unstructured.Unstructured)
-
-				if obj.GetName() == name {
-					buildRun, err := asBuildRun(*obj)
-					if err != nil {
-						return nil, err
-					}
-
-					switch buildRun.Status.Succeeded {
-					case corev1.ConditionTrue:
-						if buildRun.Status.CompletionTime != nil {
-							return buildRun, nil
-						}
-
-					case corev1.ConditionFalse:
-						return nil, buildRunError(kubeAccess, *buildRun)
-					}
-				}
-			}
-
-		case <-timeout:
-			return nil, fmt.Errorf("timeout occurred while waiting for buildrun %s to complete", name)
-		}
-	}
+	return asBuildRun(*obj)
 }
 
 func lookUpTaskRun(dynClient dynamic.Interface, namespace string, buildRun buildv1.BuildRun) (*pipelinev1.TaskRun, error) {
