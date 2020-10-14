@@ -162,37 +162,40 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, name string, config BuildRunSe
 
 	defer deleteContainerImage(kubeAccess, buildRun.Namespace, config.Output.SecretRef, buildRun.Status.BuildSpec.Output.ImageURL)
 
-	taskRun, err := lookUpTaskRun(kubeAccess.DynClient, config.Namespace, *buildRun)
-	if err != nil {
-		return nil, err
+	var buildRunResult = &BuildRunResult{
+		TotalBuildRunTime:      buildRun.Status.CompletionTime.Time.Sub(buildRun.ObjectMeta.CreationTimestamp.Time),
+		BuildRunRampUpDuration: time.Duration(-1),
+		TaskRunRampUpDuration:  time.Duration(-1),
+		PodRampUpDuration:      time.Duration(-1),
+		InternalProcessingTime: time.Duration(-1),
 	}
 
-	pod, err := lookUpPod(kubeAccess.Client, config.Namespace, *taskRun)
-	if err != nil {
-		return nil, err
+	if taskRun, err := lookUpTaskRun(kubeAccess.DynClient, config.Namespace, *buildRun); err == nil {
+		pod, err := lookUpPod(kubeAccess.Client, config.Namespace, *taskRun)
+		if err != nil {
+			return nil, err
+		}
+
+		var totalTektonStepsTime time.Duration
+		for _, step := range taskRun.Status.Steps {
+			totalTektonStepsTime += step.Terminated.FinishedAt.Time.Sub(step.Terminated.StartedAt.Time)
+		}
+
+		lastInitPodIdx := len(pod.Status.InitContainerStatuses) - 1
+		lastInitPod := pod.Status.InitContainerStatuses[lastInitPodIdx]
+
+		buildRunResult.BuildRunRampUpDuration = taskRun.CreationTimestamp.Time.Sub(buildRun.CreationTimestamp.Time)
+		buildRunResult.TaskRunRampUpDuration = pod.CreationTimestamp.Time.Sub(taskRun.CreationTimestamp.Time)
+		buildRunResult.PodRampUpDuration = lastInitPod.State.Terminated.FinishedAt.Sub(pod.CreationTimestamp.Time)
+
+		buildRunResult.InternalProcessingTime = buildRunResult.TotalBuildRunTime -
+			buildRunResult.BuildRunRampUpDuration -
+			buildRunResult.TaskRunRampUpDuration -
+			buildRunResult.PodRampUpDuration -
+			totalTektonStepsTime
 	}
 
-	var totalTektonStepsTime time.Duration
-	for _, step := range taskRun.Status.Steps {
-		totalTektonStepsTime += step.Terminated.FinishedAt.Time.Sub(step.Terminated.StartedAt.Time)
-	}
-
-	lastInitPodIdx := len(pod.Status.InitContainerStatuses) - 1
-	lastInitPod := pod.Status.InitContainerStatuses[lastInitPodIdx]
-
-	totalBuildRunTime := buildRun.Status.CompletionTime.Time.Sub(buildRun.ObjectMeta.CreationTimestamp.Time)
-	buildRunRampUpDuration := taskRun.CreationTimestamp.Time.Sub(buildRun.CreationTimestamp.Time)
-	taskRunRampUpDuration := pod.CreationTimestamp.Time.Sub(taskRun.CreationTimestamp.Time)
-	podRampUpDuration := lastInitPod.State.Terminated.FinishedAt.Sub(pod.CreationTimestamp.Time)
-	internalProcessingTime := totalBuildRunTime - buildRunRampUpDuration - taskRunRampUpDuration - podRampUpDuration - totalTektonStepsTime
-
-	return &BuildRunResult{
-		TotalBuildRunTime:      totalBuildRunTime,
-		BuildRunRampUpDuration: buildRunRampUpDuration,
-		TaskRunRampUpDuration:  taskRunRampUpDuration,
-		PodRampUpDuration:      podRampUpDuration,
-		InternalProcessingTime: internalProcessingTime,
-	}, nil
+	return buildRunResult, nil
 }
 
 // ExecuteParallelBuildRuns executes the same buildrun multiple times in
