@@ -45,3 +45,25 @@ make install
 It will compile the binary into `/usr/local/bin`.
 
 Alternatively, run `make build` and pick the respective binary for your operating system from the `binaries` directory.
+
+## Development
+
+### Release Process
+
+To promote a new version, create a new release in GitHub. This will trigger a build of the binaries in Travis CI and uploads them to the respective release automatically within a couple of minutes. The best way to create a new release is to use the GitHub CLI.
+
+As a pre-requisite, a [`semver` tool](https://github.com/fsaintjacques/semver-tool) and the [GitHub CLI](https://github.com/cli/cli) are suggested on your system, for example on macOS:
+
+```sh
+curl --silent --fail --location https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver --output /usr/local/bin/semver && chmod a+rx /usr/local/bin/semver
+brew install gh
+```
+
+Example for creating a new patch release:
+
+```sh
+VERSION="v$(semver bump patch "$(git describe --tags --abbrev=0)")"
+gh release create "$VERSION" --title "build-load release $VERSION"
+```
+
+The CLI will interactively prompt for missing details like the notes.
