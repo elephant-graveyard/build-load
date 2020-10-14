@@ -46,40 +46,54 @@ func (brs BuildRunResultSet) String() string {
 		return tmp
 	}
 
-	table, err := neat.Table([][]string{
-		bold("Description", "Minimum", "Mean", "Median", "Maximum"),
-		cnvfnc("_total time between buildrun creation until finish_",
+	tableData := [][]string{bold("Description", "Minimum", "Mean", "Median", "Maximum")}
+
+	if brs.Minimum.TotalBuildRunTime >= 0 {
+		tableData = append(tableData, cnvfnc("_total time between buildrun creation until finish_",
 			brs.Minimum.TotalBuildRunTime,
 			brs.Mean.TotalBuildRunTime,
 			brs.Median.TotalBuildRunTime,
 			brs.Maximum.TotalBuildRunTime,
-		),
-		cnvfnc("_time between buildrun creation and taskrun creation_",
+		))
+	}
+
+	if brs.Minimum.BuildRunRampUpDuration >= 0 {
+		tableData = append(tableData, cnvfnc("_time between buildrun creation and taskrun creation_",
 			brs.Minimum.BuildRunRampUpDuration,
 			brs.Mean.BuildRunRampUpDuration,
 			brs.Median.BuildRunRampUpDuration,
 			brs.Maximum.BuildRunRampUpDuration,
-		),
-		cnvfnc("_time between taskrun creation and tekton pod creation_",
+		))
+	}
+
+	if brs.Minimum.TaskRunRampUpDuration >= 0 {
+		tableData = append(tableData, cnvfnc("_time between taskrun creation and tekton pod creation_",
 			brs.Minimum.TaskRunRampUpDuration,
 			brs.Mean.TaskRunRampUpDuration,
 			brs.Median.TaskRunRampUpDuration,
 			brs.Maximum.TaskRunRampUpDuration,
-		),
-		cnvfnc("_time between tekton pod creation and first container start_",
+		))
+	}
+
+	if brs.Minimum.PodRampUpDuration >= 0 {
+		tableData = append(tableData, cnvfnc("_time between tekton pod creation and first container start_",
 			brs.Minimum.PodRampUpDuration,
 			brs.Mean.PodRampUpDuration,
 			brs.Median.PodRampUpDuration,
 			brs.Maximum.PodRampUpDuration,
-		),
-		cnvfnc("_remaining internal processing time_",
+		))
+	}
+
+	if brs.Minimum.InternalProcessingTime >= 0 {
+		tableData = append(tableData, cnvfnc("_remaining internal processing time_",
 			brs.Minimum.InternalProcessingTime,
 			brs.Mean.InternalProcessingTime,
 			brs.Median.InternalProcessingTime,
 			brs.Maximum.InternalProcessingTime,
-		),
-	}, neat.VertialBarSeparator())
+		))
+	}
 
+	table, err := neat.Table(tableData, neat.VertialBarSeparator())
 	if err != nil {
 		panic(err)
 	}
