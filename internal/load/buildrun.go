@@ -35,63 +35,6 @@ import (
 // settings to verify whether a buildrun can work and how much pressure it
 // would put onto the system
 func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parallel int) error {
-	// Check how many buildruns are currently in the system already
-	buildRunsResults, err := kubeAccess.DynClient.Resource(BuildRunResource).List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	var (
-		totalBuildRuns     int
-		completedBuildRuns int
-	)
-
-	for _, item := range buildRunsResults.Items {
-		buildRun, err := asBuildRun(item)
-		if err != nil {
-			return err
-		}
-
-		if buildRun.Status.CompletionTime != nil {
-			completedBuildRuns++
-		}
-
-		totalBuildRuns++
-	}
-
-	if totalBuildRuns > 0 {
-		bunt.Printf("There are currently LightSkyBlue{%s} in the system. It might be an idea to go through the list of completed buildruns to remove old and obsolete buildruns.\n",
-			text.Plural(totalBuildRuns, "completed buildrun"),
-		)
-
-		fmt.Println()
-	}
-
-	if totalBuildRuns-completedBuildRuns > 0 {
-		bunt.Printf("PaleGoldenrod{_Please note:_} With currently %s, there might be some interference with the test buildruns. Please take the current system utilisation into consideration when analysing any performance measurements.\n",
-			text.Plural(totalBuildRuns-completedBuildRuns, "active buildrun"),
-		)
-
-		fmt.Println()
-	}
-
-	nodesResults, err := kubeAccess.Client.CoreV1().Nodes().List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	var totalCPU int64
-	var totalMemory int64
-	for _, node := range nodesResults.Items {
-		totalCPU += node.Status.Capacity.Cpu().MilliValue()
-		totalMemory += node.Status.Capacity.Memory().Value()
-	}
-
-	totalNodeResources := corev1.ResourceList{
-		corev1.ResourceCPU:    *resource.NewMilliQuantity(totalCPU, resource.DecimalSI),
-		corev1.ResourceMemory: *resource.NewQuantity(totalMemory, resource.BinarySI),
-	}
-
 	// Check whether the configured cluster build strategy is available
 	cbsRaw, err := kubeAccess.DynClient.Resource(ClusterBuildStrategy).Get(config.ClusterBuildStrategy, metav1.GetOptions{})
 	if err != nil {
@@ -107,35 +50,91 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parall
 			)
 		}
 
-		return err
-	}
-	clusterBuildStrategy, err := asClusterBuildStrategy(*cbsRaw)
-	if err != nil {
-		return err
+		bunt.Printf("DarkOrange{*Warning:*} The current permissions do not allow to check whether build strategy CadetBlue{*%s*} is available.\n\n", config.ClusterBuildStrategy)
 	}
 
-	resourcesForClusterBuildStrategy := estimateResourceRequests(*clusterBuildStrategy, int64(parallel))
+	// Given that the permissions allow it, check how many buildruns are
+	// currently in the system already
+	if buildRunsResults, err := kubeAccess.DynClient.Resource(BuildRunResource).List(metav1.ListOptions{}); err == nil {
+		var (
+			totalBuildRuns     int
+			completedBuildRuns int
+		)
 
-	scaleToString := func(q *resource.Quantity) string {
-		var mods = []string{"Byte", "KiB", "MiB", "GiB", "TiB"}
+		for _, item := range buildRunsResults.Items {
+			buildRun, err := asBuildRun(item)
+			if err != nil {
+				return err
+			}
 
-		tmp := float64(q.Value())
+			if buildRun.Status.CompletionTime != nil {
+				completedBuildRuns++
+			}
 
-		var i = 0
-		for i = 0; tmp > 1023.9 && i < len(mods); i++ {
-			tmp /= 1024.0
+			totalBuildRuns++
 		}
 
-		return fmt.Sprintf("%.1f %s", tmp, mods[i])
+		if totalBuildRuns > 0 {
+			bunt.Printf("There are currently LightSkyBlue{%s} in the system. It might be an idea to go through the list of completed buildruns to remove old and obsolete buildruns.\n",
+				text.Plural(totalBuildRuns, "completed buildrun"),
+			)
+
+			fmt.Println()
+		}
+
+		if totalBuildRuns-completedBuildRuns > 0 {
+			bunt.Printf("PaleGoldenrod{_Please note:_} With currently %s, there might be some interference with the test buildruns. Please take the current system utilisation into consideration when analysing any performance measurements.\n",
+				text.Plural(totalBuildRuns-completedBuildRuns, "active buildrun"),
+			)
+
+			fmt.Println()
+		}
 	}
 
-	bunt.Printf("Keep in mind, with Moccasin{_%s_}, the estimated resource request will be roughly SlateGray{%v CPU cores} and LightSlateGray{%v system memory}. Available in the cluster are SlateGray{%v CPU cores} and LightSlateGray{%v system memory}.\n\n",
-		text.Plural(parallel, "concurrent buildrun"),
-		resourcesForClusterBuildStrategy.Cpu(),
-		scaleToString(resourcesForClusterBuildStrategy.Memory()),
-		totalNodeResources.Cpu(),
-		scaleToString(totalNodeResources.Memory()),
-	)
+	if nodesResults, err := kubeAccess.Client.CoreV1().Nodes().List(metav1.ListOptions{}); err != nil {
+		var totalCPU int64
+		var totalMemory int64
+		for _, node := range nodesResults.Items {
+			totalCPU += node.Status.Capacity.Cpu().MilliValue()
+			totalMemory += node.Status.Capacity.Memory().Value()
+		}
+
+		totalNodeResources := corev1.ResourceList{
+			corev1.ResourceCPU:    *resource.NewMilliQuantity(totalCPU, resource.DecimalSI),
+			corev1.ResourceMemory: *resource.NewQuantity(totalMemory, resource.BinarySI),
+		}
+
+		//
+		if cbsRaw != nil {
+			clusterBuildStrategy, err := asClusterBuildStrategy(*cbsRaw)
+			if err != nil {
+				return err
+			}
+
+			resourcesForClusterBuildStrategy := estimateResourceRequests(*clusterBuildStrategy, int64(parallel))
+
+			scaleToString := func(q *resource.Quantity) string {
+				var mods = []string{"Byte", "KiB", "MiB", "GiB", "TiB"}
+
+				tmp := float64(q.Value())
+
+				var i = 0
+				for i = 0; tmp > 1023.9 && i < len(mods); i++ {
+					tmp /= 1024.0
+				}
+
+				return fmt.Sprintf("%.1f %s", tmp, mods[i])
+			}
+
+			bunt.Printf("Keep in mind, with Moccasin{_%s_}, the estimated resource request will be roughly SlateGray{%v CPU cores} and LightSlateGray{%v system memory}. Available in the cluster are SlateGray{%v CPU cores} and LightSlateGray{%v system memory}.\n\n",
+				text.Plural(parallel, "concurrent buildrun"),
+				resourcesForClusterBuildStrategy.Cpu(),
+				scaleToString(resourcesForClusterBuildStrategy.Memory()),
+				totalNodeResources.Cpu(),
+				scaleToString(totalNodeResources.Memory()),
+			)
+		}
+	}
 
 	return nil
 }
