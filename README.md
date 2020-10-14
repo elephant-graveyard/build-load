@@ -34,15 +34,29 @@ build-load \
 
 ## Setup
 
-For now, you have to build it from source:
+### Download via Homebrew
+
+```sh
+brew install homeport/tap/build-load
+```
+
+### Download via Curl to Pipe
+
+The download script will work for Linux and macOS systems.
+
+```sh
+curl -fsL https://git.io/JTYKj | bash
+```
+
+### Build from Source
+
+It will compile the binary into `/usr/local/bin`.
 
 ```sh
 git clone https://github.com/homeport/build-load.git
 cd build-load
 make install
 ```
-
-It will compile the binary into `/usr/local/bin`.
 
 Alternatively, run `make build` and pick the respective binary for your operating system from the `binaries` directory.
 
