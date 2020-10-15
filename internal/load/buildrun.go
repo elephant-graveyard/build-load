@@ -104,7 +104,6 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parall
 			corev1.ResourceMemory: *resource.NewQuantity(totalMemory, resource.BinarySI),
 		}
 
-		//
 		if cbsRaw != nil {
 			clusterBuildStrategy, err := asClusterBuildStrategy(*cbsRaw)
 			if err != nil {
