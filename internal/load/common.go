@@ -23,6 +23,7 @@ import (
 	buildv1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 
+	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wrap"
 	"github.com/mitchellh/go-homedir"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -130,4 +131,8 @@ func wrapErrorChanResults(errors chan error, format string, a ...interface{}) er
 	default:
 		return wrap.Errorsf(errorList, format, a...)
 	}
+}
+
+func warn(format string, a ...interface{}) {
+	bunt.Printf("DarkOrange{*Warning:*} %s\n", bunt.Sprintf(format, a...))
 }

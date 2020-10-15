@@ -50,7 +50,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parall
 			)
 		}
 
-		bunt.Printf("DarkOrange{*Warning:*} The current permissions do not allow to check whether build strategy CadetBlue{*%s*} is available.\n\n", config.ClusterBuildStrategy)
+		warn("The current permissions do not allow to check whether build strategy CadetBlue{*%s*} is available.\n\n", config.ClusterBuildStrategy)
 	}
 
 	// Given that the permissions allow it, check how many buildruns are
@@ -146,21 +146,33 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, name string, config BuildRunSe
 		return nil, err
 	}
 
-	defer deleteResource(kubeAccess, BuildResource, config.Namespace, name)
+	defer func() {
+		if err := deleteResource(kubeAccess, BuildResource, config.Namespace, name); err != nil {
+			warn("failed to delete build %s, %v\n", name, err)
+		}
+	}()
 
 	_, err = applyBuildRun(kubeAccess.DynClient, config.Namespace, newBuildRun(name, name))
 	if err != nil {
 		return nil, err
 	}
 
-	defer deleteResource(kubeAccess, BuildRunResource, config.Namespace, name)
+	defer func() {
+		if err := deleteResource(kubeAccess, BuildRunResource, config.Namespace, name); err != nil {
+			warn("failed to delete buildrun %s, %v\n", name, err)
+		}
+	}()
 
 	buildRun, err := waitForBuildRunCompletion(kubeAccess, config.Namespace, name)
 	if err != nil {
 		return nil, err
 	}
 
-	defer deleteContainerImage(kubeAccess, buildRun.Namespace, config.Output.SecretRef, buildRun.Status.BuildSpec.Output.ImageURL)
+	defer func() {
+		if err := deleteContainerImage(kubeAccess, buildRun.Namespace, config.Output.SecretRef, buildRun.Status.BuildSpec.Output.ImageURL); err != nil {
+			warn("failed to delete image %s, %v\n", buildRun.Status.BuildSpec.Output.ImageURL, err)
+		}
+	}()
 
 	var buildRunResult = &BuildRunResult{
 		TotalBuildRunTime:      buildRun.Status.CompletionTime.Time.Sub(buildRun.ObjectMeta.CreationTimestamp.Time),
