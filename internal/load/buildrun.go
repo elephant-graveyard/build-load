@@ -36,9 +36,9 @@ import (
 // would put onto the system
 func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parallel int) error {
 	// Check whether the configured cluster build strategy is available
-	cbsRaw, err := kubeAccess.DynClient.Resource(ClusterBuildStrategy).Get(config.ClusterBuildStrategy, metav1.GetOptions{})
+	clusterBuildStrategy, err := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().Get(config.ClusterBuildStrategy, metav1.GetOptions{})
 	if err != nil {
-		if list, _ := kubeAccess.DynClient.Resource(ClusterBuildStrategy).List(metav1.ListOptions{}); list != nil {
+		if list, _ := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().List(metav1.ListOptions{}); list != nil {
 			names := make([]string, len(list.Items))
 			for i, entry := range list.Items {
 				names[i] = entry.GetName()
@@ -55,18 +55,13 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parall
 
 	// Given that the permissions allow it, check how many buildruns are
 	// currently in the system already
-	if buildRunsResults, err := kubeAccess.DynClient.Resource(BuildRunResource).List(metav1.ListOptions{}); err == nil {
+	if buildRunsResults, err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns("").List(metav1.ListOptions{}); err == nil {
 		var (
 			totalBuildRuns     int
 			completedBuildRuns int
 		)
 
-		for _, item := range buildRunsResults.Items {
-			buildRun, err := asBuildRun(item)
-			if err != nil {
-				return err
-			}
-
+		for _, buildRun := range buildRunsResults.Items {
 			if buildRun.Status.CompletionTime != nil {
 				completedBuildRuns++
 			}
@@ -104,12 +99,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parall
 			corev1.ResourceMemory: *resource.NewQuantity(totalMemory, resource.BinarySI),
 		}
 
-		if cbsRaw != nil {
-			clusterBuildStrategy, err := asClusterBuildStrategy(*cbsRaw)
-			if err != nil {
-				return err
-			}
-
+		if clusterBuildStrategy != nil {
 			resourcesForClusterBuildStrategy := estimateResourceRequests(*clusterBuildStrategy, int64(parallel))
 
 			scaleToString := func(q *resource.Quantity) string {
@@ -140,29 +130,29 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parall
 
 // ExecuteSingleBuildRun executes a single buildrun based on the given settings
 func ExecuteSingleBuildRun(kubeAccess KubeAccess, name string, config BuildRunSettings) (*BuildRunResult, error) {
-	_, err := applyBuild(kubeAccess.DynClient, config.Namespace, newBuild(name, config))
+	build, err := applyBuild(kubeAccess, newBuild(name, config))
 	if err != nil {
 		return nil, err
 	}
 
 	defer func() {
-		if err := deleteResource(kubeAccess, BuildResource, config.Namespace, name); err != nil {
+		if err := kubeAccess.BuildClient.BuildV1alpha1().Builds(build.Namespace).Delete(build.Name, &metav1.DeleteOptions{}); err != nil {
 			warn("failed to delete build %s, %v\n", name, err)
 		}
 	}()
 
-	_, err = applyBuildRun(kubeAccess.DynClient, config.Namespace, newBuildRun(name, name))
+	buildRun, err := applyBuildRun(kubeAccess, newBuildRun(name, *build))
 	if err != nil {
 		return nil, err
 	}
 
 	defer func() {
-		if err := deleteResource(kubeAccess, BuildRunResource, config.Namespace, name); err != nil {
+		if err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(buildRun.Namespace).Delete(buildRun.Name, &metav1.DeleteOptions{}); err != nil {
 			warn("failed to delete buildrun %s, %v\n", name, err)
 		}
 	}()
 
-	buildRun, err := waitForBuildRunCompletion(kubeAccess, config.Namespace, name)
+	buildRun, err = waitForBuildRunCompletion(kubeAccess, buildRun)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +171,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, name string, config BuildRunSe
 		InternalProcessingTime: time.Duration(-1),
 	}
 
-	if taskRun, err := lookUpTaskRun(kubeAccess.DynClient, config.Namespace, *buildRun); err == nil {
+	if taskRun, err := lookUpTaskRun(kubeAccess, *buildRun); err == nil {
 		pod, err := lookUpPod(kubeAccess.Client, config.Namespace, *taskRun)
 		if err != nil {
 			return nil, err

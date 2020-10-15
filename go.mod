@@ -17,7 +17,7 @@ require (
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b // indirect
 	github.com/mitchellh/mapstructure v1.3.1 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
-	github.com/shipwright-io/build v0.1.0
+	github.com/shipwright-io/build v0.1.1-0.20201015051941-5d89593d58ad
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.1
 	github.com/tektoncd/pipeline v0.14.2

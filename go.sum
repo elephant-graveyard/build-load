@@ -1070,8 +1070,8 @@ github.com/sclevine/spec v1.2.0/go.mod h1:W4J29eT/Kzv7/b9IWLB055Z+qvVC9vt0Arko24
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/sergi/go-diff v1.1.0/go.mod h1:STckp+ISIX8hZLjrqAeVduY0gWCT9IjLuqbuNXdaHfM=
-github.com/shipwright-io/build v0.1.0 h1:c8f6/OZHInYdTHaXmEvCZeLRloiuH8B5VX4xrBgYvSc=
-github.com/shipwright-io/build v0.1.0/go.mod h1:J+4gcuT1JvtRNcB8fbCO+1roG9ep2L3JJsHKJ6vU+MI=
+github.com/shipwright-io/build v0.1.1-0.20201015051941-5d89593d58ad h1:+GVq3QpS9tvLI5Tty6qy3bLictPkM+tNcX4Gf5fl8xY=
+github.com/shipwright-io/build v0.1.1-0.20201015051941-5d89593d58ad/go.mod h1:DSk6I2aMWPZY1r/ZEAvqsHOf9KmelKHuaKHAbHjc074=
 github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24/go.mod h1:M+9NzErvs504Cn4c5DxATwIqPbtswREoFCre64PpcG4=
 github.com/shurcooL/githubv4 v0.0.0-20180925043049-51d7b505e2e9/go.mod h1:hAF0iLZy4td2EX+/8Tw+4nodhlMrwN3HupfaXj3zkGo=
 github.com/shurcooL/githubv4 v0.0.0-20190718010115-4ba037080260/go.mod h1:hAF0iLZy4td2EX+/8Tw+4nodhlMrwN3HupfaXj3zkGo=

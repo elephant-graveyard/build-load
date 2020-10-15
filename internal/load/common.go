@@ -21,7 +21,9 @@ import (
 	"path/filepath"
 
 	buildv1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
+	buildclient "github.com/shipwright-io/build/pkg/client/build/clientset/versioned"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wrap"
@@ -102,10 +104,22 @@ func NewKubeAccess() (*KubeAccess, error) {
 		return nil, err
 	}
 
+	buildClient, err := buildclient.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	tektonClient, err := tektonclient.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	return &KubeAccess{
-		RestConfig: restConfig,
-		Client:     client,
-		DynClient:  dynClient,
+		RestConfig:   restConfig,
+		Client:       client,
+		DynClient:    dynClient,
+		BuildClient:  buildClient,
+		TektonClient: tektonClient,
 	}, nil
 }
 
