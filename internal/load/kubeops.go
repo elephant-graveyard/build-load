@@ -142,6 +142,10 @@ func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1.BuildRun
 		name      = buildRun.Name
 	)
 
+	if buildRun.Spec.Timeout != nil {
+		timeout = buildRun.Spec.Timeout.Duration
+	}
+
 	err := wait.PollImmediate(5*time.Second, timeout, func() (done bool, err error) {
 		buildRun, err = kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
