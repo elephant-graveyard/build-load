@@ -29,19 +29,13 @@ import (
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
-// TODO Make timeouts configurable
 var (
-	defaultBuildRunWaitTimeout = time.Duration(600) * time.Second
-	defaultDeleteWaitTimeout   = time.Duration(10) * time.Second
+	defaultBuildRunWaitTimeout = time.Duration(5 * time.Minute)
 )
 
 func newBuild(name string, config BuildRunSettings) buildv1.Build {
@@ -52,7 +46,8 @@ func newBuild(name string, config BuildRunSettings) buildv1.Build {
 		},
 
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name:      name,
+			Namespace: config.Namespace,
 		},
 
 		Spec: buildv1.BuildSpec{
@@ -102,7 +97,7 @@ func newBuild(name string, config BuildRunSettings) buildv1.Build {
 	return build
 }
 
-func newBuildRun(name string, buildRef string) buildv1.BuildRun {
+func newBuildRun(name string, build buildv1.Build) buildv1.BuildRun {
 	return buildv1.BuildRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "BuildRun",
@@ -110,12 +105,13 @@ func newBuildRun(name string, buildRef string) buildv1.BuildRun {
 		},
 
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name:      name,
+			Namespace: build.Namespace,
 		},
 
 		Spec: buildv1.BuildRunSpec{
 			BuildRef: &buildv1.BuildRef{
-				Name: buildRef,
+				Name: build.Name,
 			},
 
 			ServiceAccount: &buildv1.ServiceAccount{
@@ -125,82 +121,58 @@ func newBuildRun(name string, buildRef string) buildv1.BuildRun {
 	}
 }
 
-func applyBuild(dynClient dynamic.Interface, namespace string, build buildv1.Build) (*unstructured.Unstructured, error) {
-	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&build)
-	if err != nil {
-		return nil, err
-	}
-
-	return applyUnstructured(dynClient, namespace, BuildResource, obj)
+func applyBuild(kubeAccess KubeAccess, build buildv1.Build) (*buildv1.Build, error) {
+	return kubeAccess.BuildClient.
+		BuildV1alpha1().
+		Builds(build.Namespace).
+		Create(&build)
 }
 
-func applyBuildRun(dynClient dynamic.Interface, namespace string, buildRun buildv1.BuildRun) (*unstructured.Unstructured, error) {
-	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&buildRun)
-	if err != nil {
-		return nil, err
-	}
-
-	return applyUnstructured(dynClient, namespace, BuildRunResource, obj)
+func applyBuildRun(kubeAccess KubeAccess, buildRun buildv1.BuildRun) (*buildv1.BuildRun, error) {
+	return kubeAccess.BuildClient.
+		BuildV1alpha1().
+		BuildRuns(buildRun.Namespace).
+		Create(&buildRun)
 }
 
-func applyUnstructured(dynClient dynamic.Interface, namespace string, resource schema.GroupVersionResource, obj map[string]interface{}) (*unstructured.Unstructured, error) {
-	return dynClient.
-		Resource(resource).
-		Namespace(namespace).
-		Create(&unstructured.Unstructured{Object: obj}, metav1.CreateOptions{})
-}
+func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1.BuildRun) (*buildv1.BuildRun, error) {
+	var (
+		timeout   = defaultBuildRunWaitTimeout
+		namespace = buildRun.Namespace
+		name      = buildRun.Name
+	)
 
-func waitForBuildRunCompletion(kubeAccess KubeAccess, namespace string, name string) (*buildv1.BuildRun, error) {
-	// The code used to use the client-go watcher to listen to all the events
-	// that came in for a specific buildRun to eventually decide whether it
-	// succeeded or failed. However, under certain high load conditions, some
-	// of the events went missing. The buildRun was done, but the code did not
-	// pick it up. Therefore, the code was changed to this polling style.
+	err := wait.PollImmediate(5*time.Second, timeout, func() (done bool, err error) {
+		buildRun, err = kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(name, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
 
-	var ticker = time.NewTicker(time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			if buildRun, err := lookUpBuildRun(kubeAccess, namespace, name); err == nil {
-				switch buildRun.Status.Succeeded {
-				case corev1.ConditionTrue:
-					if buildRun.Status.CompletionTime != nil {
-						return buildRun, nil
-					}
-
-				case corev1.ConditionFalse:
-					return nil, buildRunError(kubeAccess, *buildRun)
-				}
+		switch buildRun.Status.Succeeded {
+		case corev1.ConditionTrue:
+			if buildRun.Status.CompletionTime != nil {
+				return true, nil
 			}
 
-		case <-time.After(defaultBuildRunWaitTimeout):
-			return nil, fmt.Errorf("timeout occurred while waiting for buildrun %s to complete", name)
+		case corev1.ConditionFalse:
+			return false, buildRunError(kubeAccess, *buildRun)
 		}
-	}
+
+		return false, nil
+	})
+
+	return buildRun, err
 }
 
-func lookUpBuildRun(kubeAccess KubeAccess, namespace string, name string) (*buildv1.BuildRun, error) {
-	obj, err := kubeAccess.DynClient.Resource(BuildRunResource).Namespace(namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	return asBuildRun(*obj)
-}
-
-func lookUpTaskRun(dynClient dynamic.Interface, namespace string, buildRun buildv1.BuildRun) (*pipelinev1.TaskRun, error) {
+func lookUpTaskRun(kubeAccess KubeAccess, buildRun buildv1.BuildRun) (*pipelinev1.TaskRun, error) {
 	if buildRun.Status.LatestTaskRunRef == nil {
 		return nil, fmt.Errorf("failed to find taskrun of buildrun %s, because taskrun reference is not set", buildRun.Name)
 	}
 
-	obj, err := dynClient.Resource(TaskRunResource).Namespace(namespace).Get(*buildRun.Status.LatestTaskRunRef, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	return asTaskRun(*obj)
+	return kubeAccess.TektonClient.
+		TektonV1alpha1().
+		TaskRuns(buildRun.Namespace).
+		Get(*buildRun.Status.LatestTaskRunRef, metav1.GetOptions{})
 }
 
 func lookUpPod(client kubernetes.Interface, namespace string, taskRun pipelinev1.TaskRun) (*corev1.Pod, error) {
@@ -208,93 +180,6 @@ func lookUpPod(client kubernetes.Interface, namespace string, taskRun pipelinev1
 		CoreV1().
 		Pods(namespace).
 		Get(taskRun.Status.PodName, metav1.GetOptions{})
-}
-
-func asBuild(obj unstructured.Unstructured) (*buildv1.Build, error) {
-	data, err := obj.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	var build buildv1.Build
-	if err := json.Unmarshal(data, &build); err != nil {
-		return nil, err
-	}
-
-	return &build, nil
-}
-
-func asBuildRun(obj unstructured.Unstructured) (*buildv1.BuildRun, error) {
-	data, err := obj.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	var buildRun buildv1.BuildRun
-	if err := json.Unmarshal(data, &buildRun); err != nil {
-		return nil, err
-	}
-
-	return &buildRun, nil
-}
-
-func asTaskRun(obj unstructured.Unstructured) (*pipelinev1.TaskRun, error) {
-	data, err := obj.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	var taskRun pipelinev1.TaskRun
-	if err := json.Unmarshal(data, &taskRun); err != nil {
-		return nil, err
-	}
-
-	return &taskRun, nil
-}
-
-func asClusterBuildStrategy(obj unstructured.Unstructured) (*buildv1.ClusterBuildStrategy, error) {
-	data, err := obj.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	var clusterBuildStrategy buildv1.ClusterBuildStrategy
-	if err := json.Unmarshal(data, &clusterBuildStrategy); err != nil {
-		return nil, err
-	}
-
-	return &clusterBuildStrategy, nil
-}
-
-func deleteResource(kubeAccess KubeAccess, resource schema.GroupVersionResource, namespace string, name string) error {
-	watcher, err := kubeAccess.DynClient.Resource(resource).Namespace(namespace).Watch(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	defer watcher.Stop()
-	timeout := time.After(defaultDeleteWaitTimeout)
-
-	if err := kubeAccess.DynClient.Resource(resource).Namespace(namespace).Delete(name, &metav1.DeleteOptions{}); err != nil {
-		return err
-	}
-
-	for {
-		select {
-		case event := <-watcher.ResultChan():
-			switch event.Type {
-			case watch.Deleted:
-				obj := event.Object.(*unstructured.Unstructured)
-
-				if obj.GetName() == name {
-					return nil
-				}
-			}
-
-		case <-timeout:
-			return fmt.Errorf("timeout occurred while waiting for buildrun to complete")
-		}
-	}
 }
 
 func lookUpDockerCredentialsFromSecret(kubeAccess KubeAccess, namespace string, secretRef string) (string, string, error) {
@@ -333,7 +218,7 @@ func buildRunError(kubeAccess KubeAccess, buildRun buildv1.BuildRun) error {
 	}
 
 	if buildRun.Status.LatestTaskRunRef != nil {
-		if taskRun, err := lookUpTaskRun(kubeAccess.DynClient, buildRun.Namespace, buildRun); err == nil {
+		if taskRun, err := lookUpTaskRun(kubeAccess, buildRun); err == nil {
 			if taskRunPod, err := lookUpPod(kubeAccess.Client, buildRun.Namespace, *taskRun); err == nil {
 				var buf bytes.Buffer
 

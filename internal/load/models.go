@@ -19,6 +19,8 @@ package load
 import (
 	"time"
 
+	buildclient "github.com/shipwright-io/build/pkg/client/build/clientset/versioned"
+	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -26,9 +28,11 @@ import (
 
 // KubeAccess contains Kubernetes cluster access objects in a single place
 type KubeAccess struct {
-	RestConfig *rest.Config
-	Client     kubernetes.Interface
-	DynClient  dynamic.Interface
+	RestConfig   *rest.Config
+	Client       kubernetes.Interface
+	DynClient    dynamic.Interface
+	BuildClient  buildclient.Interface
+	TektonClient tektonclient.Interface
 }
 
 // BuildRunResultSet is an aggregated result set based on multiple
