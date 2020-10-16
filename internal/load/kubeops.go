@@ -30,8 +30,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-
-	"k8s.io/client-go/kubernetes"
 )
 
 var (
@@ -209,13 +207,6 @@ func lookUpTaskRunAndPod(kubeAccess KubeAccess, buildRun buildv1.BuildRun) (task
 	}
 
 	return taskRun, taskRunPod
-}
-
-func lookUpPod(client kubernetes.Interface, namespace string, taskRun pipelinev1.TaskRun) (*corev1.Pod, error) {
-	return client.
-		CoreV1().
-		Pods(namespace).
-		Get(taskRun.Status.PodName, metav1.GetOptions{})
 }
 
 func lookUpDockerCredentialsFromSecret(kubeAccess KubeAccess, namespace string, secretRef string) (string, string, error) {
