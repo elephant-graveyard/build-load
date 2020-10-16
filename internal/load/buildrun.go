@@ -171,29 +171,27 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, name string, config BuildRunSe
 		InternalProcessingTime: time.Duration(-1),
 	}
 
-	if taskRun, err := lookUpTaskRun(kubeAccess, *buildRun); err == nil {
-		pod, err := lookUpPod(kubeAccess.Client, config.Namespace, *taskRun)
-		if err != nil {
-			return nil, err
-		}
-
-		var totalTektonStepsTime time.Duration
-		for _, step := range taskRun.Status.Steps {
-			totalTektonStepsTime += step.Terminated.FinishedAt.Time.Sub(step.Terminated.StartedAt.Time)
-		}
-
-		lastInitPodIdx := len(pod.Status.InitContainerStatuses) - 1
-		lastInitPod := pod.Status.InitContainerStatuses[lastInitPodIdx]
-
-		buildRunResult.BuildRunRampUpDuration = taskRun.CreationTimestamp.Time.Sub(buildRun.CreationTimestamp.Time)
-		buildRunResult.TaskRunRampUpDuration = pod.CreationTimestamp.Time.Sub(taskRun.CreationTimestamp.Time)
+	taskRun, pod := lookUpTaskRunAndPod(kubeAccess, *buildRun)
+	if pod != nil {
+		var lastInitPodIdx = len(pod.Status.InitContainerStatuses) - 1
+		var lastInitPod = pod.Status.InitContainerStatuses[lastInitPodIdx]
 		buildRunResult.PodRampUpDuration = lastInitPod.State.Terminated.FinishedAt.Sub(pod.CreationTimestamp.Time)
 
-		buildRunResult.InternalProcessingTime = buildRunResult.TotalBuildRunTime -
-			buildRunResult.BuildRunRampUpDuration -
-			buildRunResult.TaskRunRampUpDuration -
-			buildRunResult.PodRampUpDuration -
-			totalTektonStepsTime
+		if taskRun != nil {
+			var totalTektonStepsTime time.Duration
+			for _, step := range taskRun.Status.Steps {
+				totalTektonStepsTime += step.Terminated.FinishedAt.Time.Sub(step.Terminated.StartedAt.Time)
+			}
+
+			buildRunResult.BuildRunRampUpDuration = taskRun.CreationTimestamp.Time.Sub(buildRun.CreationTimestamp.Time)
+			buildRunResult.TaskRunRampUpDuration = pod.CreationTimestamp.Time.Sub(taskRun.CreationTimestamp.Time)
+
+			buildRunResult.InternalProcessingTime = buildRunResult.TotalBuildRunTime -
+				buildRunResult.BuildRunRampUpDuration -
+				buildRunResult.TaskRunRampUpDuration -
+				buildRunResult.PodRampUpDuration -
+				totalTektonStepsTime
+		}
 	}
 
 	return buildRunResult, nil

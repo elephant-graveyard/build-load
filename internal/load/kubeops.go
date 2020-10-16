@@ -168,15 +168,47 @@ func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1.BuildRun
 	return buildRun, err
 }
 
-func lookUpTaskRun(kubeAccess KubeAccess, buildRun buildv1.BuildRun) (*pipelinev1.TaskRun, error) {
-	if buildRun.Status.LatestTaskRunRef == nil {
-		return nil, fmt.Errorf("failed to find taskrun of buildrun %s, because taskrun reference is not set", buildRun.Name)
+func lookUpTaskRunAndPod(kubeAccess KubeAccess, buildRun buildv1.BuildRun) (taskRun *pipelinev1.TaskRun, taskRunPod *corev1.Pod) {
+	if buildRun.Status.LatestTaskRunRef != nil {
+		tmp, err := kubeAccess.TektonClient.
+			TektonV1alpha1().
+			TaskRuns(buildRun.Namespace).
+			Get(*buildRun.Status.LatestTaskRunRef, metav1.GetOptions{})
+
+		if err == nil {
+			taskRun = tmp
+		}
 	}
 
-	return kubeAccess.TektonClient.
-		TektonV1alpha1().
-		TaskRuns(buildRun.Namespace).
-		Get(*buildRun.Status.LatestTaskRunRef, metav1.GetOptions{})
+	// In case the taskRun could be looked up, use it to also get the
+	// respective taskRun pod
+	if taskRun != nil {
+		tmp, err := kubeAccess.Client.
+			CoreV1().
+			Pods(taskRun.Namespace).
+			Get(taskRun.Status.PodName, metav1.GetOptions{})
+
+		if err == nil {
+			taskRunPod = tmp
+		}
+
+		return taskRun, taskRunPod
+	}
+
+	// For scenarios where the taskRun cannot be obtains, look up the
+	// pod by a well known label that should lead to the pod
+	listResp, err := kubeAccess.Client.
+		CoreV1().
+		Pods(buildRun.Namespace).
+		List(metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("buildrun.build.dev/name=%s", buildRun.Name)},
+		)
+
+	if err == nil && len(listResp.Items) == 1 {
+		taskRunPod = &listResp.Items[0]
+	}
+
+	return taskRun, taskRunPod
 }
 
 func lookUpPod(client kubernetes.Interface, namespace string, taskRun pipelinev1.TaskRun) (*corev1.Pod, error) {
@@ -221,42 +253,37 @@ func buildRunError(kubeAccess KubeAccess, buildRun buildv1.BuildRun) error {
 		return nil
 	}
 
-	if buildRun.Status.LatestTaskRunRef != nil {
-		if taskRun, err := lookUpTaskRun(kubeAccess, buildRun); err == nil {
-			if taskRunPod, err := lookUpPod(kubeAccess.Client, buildRun.Namespace, *taskRun); err == nil {
-				var buf bytes.Buffer
+	if taskRun, taskRunPod := lookUpTaskRunAndPod(kubeAccess, buildRun); taskRun != nil && taskRunPod != nil {
+		var buf bytes.Buffer
+		for _, container := range append(taskRunPod.Spec.InitContainers, taskRunPod.Spec.Containers...) {
+			reader, err := kubeAccess.Client.
+				CoreV1().
+				RESTClient().
+				Get().
+				Namespace(taskRunPod.Namespace).
+				Name(taskRunPod.Name).
+				Resource("pods").
+				SubResource("log").
+				Param("container", container.Name).
+				Stream()
 
-				for _, container := range append(taskRunPod.Spec.InitContainers, taskRunPod.Spec.Containers...) {
-					reader, err := kubeAccess.Client.
-						CoreV1().
-						RESTClient().
-						Get().
-						Namespace(taskRunPod.Namespace).
-						Name(taskRunPod.Name).
-						Resource("pods").
-						SubResource("log").
-						Param("container", container.Name).
-						Stream()
+			if err == nil {
+				defer reader.Close()
 
-					if err == nil {
-						defer reader.Close()
-
-						var scanner = bufio.NewScanner(reader)
-						for scanner.Scan() {
-							for _, line := range strings.Split(scanner.Text(), "\n") {
-								fmt.Fprintf(&buf, "[%s] %s\n", container.Name, line)
-							}
-						}
+				var scanner = bufio.NewScanner(reader)
+				for scanner.Scan() {
+					for _, line := range strings.Split(scanner.Text(), "\n") {
+						fmt.Fprintf(&buf, "[%s] %s\n", container.Name, line)
 					}
 				}
-
-				return wrap.Errorf(
-					fmt.Errorf(buf.String()),
-					"buildRun %s failed",
-					buildRun.Name,
-				)
 			}
 		}
+
+		return wrap.Errorf(
+			fmt.Errorf(buf.String()),
+			"buildRun %s failed",
+			buildRun.Name,
+		)
 	}
 
 	// default error with not much more details other than the status reason
