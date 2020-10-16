@@ -18,6 +18,7 @@ package load
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -28,6 +29,7 @@ import (
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/text"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -38,19 +40,28 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parall
 	// Check whether the configured cluster build strategy is available
 	clusterBuildStrategy, err := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().Get(config.ClusterBuildStrategy, metav1.GetOptions{})
 	if err != nil {
-		if list, _ := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().List(metav1.ListOptions{}); list != nil {
-			names := make([]string, len(list.Items))
-			for i, entry := range list.Items {
-				names[i] = entry.GetName()
+		clusterBuildStrategy = nil
+
+		switch terr := err.(type) {
+		case *errors.StatusError:
+			switch terr.ErrStatus.Code {
+			case http.StatusNotFound:
+				if list, _ := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().List(metav1.ListOptions{}); list != nil {
+					var names = make([]string, len(list.Items))
+					for i, entry := range list.Items {
+						names[i] = entry.GetName()
+					}
+
+					return fmt.Errorf("failed to find ClusterBuildStrategy %s, available strategies are: %s",
+						config.ClusterBuildStrategy,
+						strings.Join(names, "\n"),
+					)
+				}
+
+			case http.StatusForbidden:
+				warn("The current permissions do not allow to check whether build strategy CadetBlue{*%s*} is available.\n\n", config.ClusterBuildStrategy)
 			}
-
-			return fmt.Errorf("failed to find ClusterBuildStrategy %s, available strategies are: %s",
-				config.ClusterBuildStrategy,
-				strings.Join(names, ", "),
-			)
 		}
-
-		warn("The current permissions do not allow to check whether build strategy CadetBlue{*%s*} is available.\n\n", config.ClusterBuildStrategy)
 	}
 
 	// Given that the permissions allow it, check how many buildruns are
@@ -86,7 +97,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parall
 		}
 	}
 
-	if nodesResults, err := kubeAccess.Client.CoreV1().Nodes().List(metav1.ListOptions{}); err != nil {
+	if nodesResults, err := kubeAccess.Client.CoreV1().Nodes().List(metav1.ListOptions{}); err == nil {
 		var totalCPU int64
 		var totalMemory int64
 		for _, node := range nodesResults.Items {
