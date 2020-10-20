@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version := $(shell git describe --tags --abbrev=0 2>/dev/null || (git rev-parse HEAD | cut -c-8))
+version := $(shell git describe --tags 2>/dev/null || (git rev-parse HEAD | cut -c-8))
 sources := $(wildcard cmd/*/*.go internal/*/*.go)
 goos := $(shell uname | tr '[:upper:]' '[:lower:]')
 goarch := $(shell uname -m | sed 's/x86_64/amd64/')
