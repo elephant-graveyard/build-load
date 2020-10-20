@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	buildv1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
+	buildv1alpha1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -36,9 +36,9 @@ import (
 // CheckSystemAndConfig sanity checks the cluster using the provided buildrun
 // settings to verify whether a buildrun can work and how much pressure it
 // would put onto the system
-func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parallel int) error {
+func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel int) error {
 	// Check whether the configured cluster build strategy is available
-	clusterBuildStrategy, err := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().Get(config.ClusterBuildStrategy, metav1.GetOptions{})
+	clusterBuildStrategy, err := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().Get(buildCfg.ClusterBuildStrategy, metav1.GetOptions{})
 	if err != nil {
 		clusterBuildStrategy = nil
 
@@ -53,13 +53,13 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parall
 					}
 
 					return fmt.Errorf("failed to find ClusterBuildStrategy %s, available strategies are: %s",
-						config.ClusterBuildStrategy,
+						buildCfg.ClusterBuildStrategy,
 						strings.Join(names, "\n"),
 					)
 				}
 
 			case http.StatusForbidden:
-				warn("The current permissions do not allow to check whether build strategy CadetBlue{*%s*} is available.\n\n", config.ClusterBuildStrategy)
+				warn("The current permissions do not allow to check whether build strategy CadetBlue{*%s*} is available.\n\n", buildCfg.ClusterBuildStrategy)
 			}
 		}
 	}
@@ -140,8 +140,8 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, config BuildRunSettings, parall
 }
 
 // ExecuteSingleBuildRun executes a single buildrun based on the given settings
-func ExecuteSingleBuildRun(kubeAccess KubeAccess, name string, config BuildRunSettings) (*BuildRunResult, error) {
-	build, err := applyBuild(kubeAccess, newBuild(name, config))
+func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string, buildSpec buildv1alpha1.BuildSpec) (*BuildRunResult, error) {
+	build, err := applyBuild(kubeAccess, newBuild(namespace, name, buildSpec))
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, name string, config BuildRunSe
 	}
 
 	defer func() {
-		if err := deleteContainerImage(kubeAccess, buildRun.Namespace, config.Output.SecretRef, buildRun.Status.BuildSpec.Output.ImageURL); err != nil {
+		if err := deleteContainerImage(kubeAccess, buildRun.Namespace, build.Spec.Output.SecretRef, buildRun.Status.BuildSpec.Output.ImageURL); err != nil {
 			warn("failed to delete image %s, %v\n", buildRun.Status.BuildSpec.Output.ImageURL, err)
 		}
 	}()
@@ -210,7 +210,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, name string, config BuildRunSe
 
 // ExecuteParallelBuildRuns executes the same buildrun multiple times in
 // parallel
-func ExecuteParallelBuildRuns(kubeAccess KubeAccess, config BuildRunSettings, parallel int) ([]BuildRunResult, error) {
+func ExecuteParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, buildCfg BuildConfig, parallel int) ([]BuildRunResult, error) {
 	var errors = make(chan error, parallel)
 	var wg sync.WaitGroup
 	wg.Add(parallel)
@@ -220,14 +220,15 @@ func ExecuteParallelBuildRuns(kubeAccess KubeAccess, config BuildRunSettings, pa
 		go func(idx int) {
 			defer wg.Done()
 
-			name := fmt.Sprintf("%s-%s-%s-%d",
-				config.Prefix,
-				config.Name,
-				config.BuildType,
-				idx,
-			)
+			namespace, name := createNamespaceAndName(namingCfg, buildCfg, idx)
 
-			result, err := ExecuteSingleBuildRun(kubeAccess, name, config)
+			buildSpec, err := createBuildSpec(name, buildCfg)
+			if err != nil {
+				errors <- err
+				return
+			}
+
+			result, err := ExecuteSingleBuildRun(kubeAccess, namespace, name, *buildSpec)
 			if err != nil {
 				errors <- err
 				return
@@ -245,11 +246,11 @@ func ExecuteParallelBuildRuns(kubeAccess KubeAccess, config BuildRunSettings, pa
 
 // ExecuteSeriesOfParallelBuildRuns executes a series of parallel buildruns
 // increasing the number of parallel buildruns with each interation
-func ExecuteSeriesOfParallelBuildRuns(kubeAccess KubeAccess, config BuildRunSettings, start int, end int, increment int) ([]BuildRunResultSet, error) {
+func ExecuteSeriesOfParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, buildCfg BuildConfig, start int, end int, increment int) ([]BuildRunResultSet, error) {
 	var results = []BuildRunResultSet{}
 
 	for parallelBuilds := start; parallelBuilds <= end; parallelBuilds += increment {
-		buildRunResults, err := ExecuteParallelBuildRuns(kubeAccess, config, parallelBuilds)
+		buildRunResults, err := ExecuteParallelBuildRuns(kubeAccess, namingCfg, buildCfg, parallelBuilds)
 		if err != nil {
 			return nil, err
 		}
@@ -268,16 +269,24 @@ func ExecuteSeriesOfParallelBuildRuns(kubeAccess KubeAccess, config BuildRunSett
 // ExecuteTestPlan executes the given test plan step by step
 func ExecuteTestPlan(kubeAccess KubeAccess, testplan TestPlan) error {
 	for i, step := range testplan.Steps {
-		bunt.Printf("Running test plan step %d/%d: LightSlateGray{%s}, build type *%s* using cluster build strategy _%s_ to build CornflowerBlue{~%s~}\n",
+		bunt.Printf("Running test plan step %d/%d: LightSlateGray{%s}, using cluster build strategy _%s_ to build CornflowerBlue{~%s~}\n",
 			i+1,
 			len(testplan.Steps),
 			step.Name,
-			step.BuildRunSettings.BuildType,
-			step.BuildRunSettings.ClusterBuildStrategy,
-			step.BuildRunSettings.Source.URL,
+			step.BuildSpec.StrategyRef.Name,
+			step.BuildSpec.Source.URL,
 		)
 
-		if _, err := ExecuteSingleBuildRun(kubeAccess, step.Name, step.BuildRunSettings); err != nil {
+		name := fmt.Sprintf("test-plan-step-%s", step.Name)
+
+		outputImageURL, err := getOutputImageURL(name, step.BuildSpec.Output.ImageURL)
+		if err != nil {
+			return err
+		}
+
+		step.BuildSpec.Output.ImageURL = outputImageURL
+
+		if _, err := ExecuteSingleBuildRun(kubeAccess, testplan.Namespace, name, step.BuildSpec); err != nil {
 			return err
 		}
 	}
@@ -285,7 +294,7 @@ func ExecuteTestPlan(kubeAccess KubeAccess, testplan TestPlan) error {
 	return nil
 }
 
-func estimateResourceRequests(clusterBuildStrategy buildv1.ClusterBuildStrategy, concurrent int64) corev1.ResourceList {
+func estimateResourceRequests(clusterBuildStrategy buildv1alpha1.ClusterBuildStrategy, concurrent int64) corev1.ResourceList {
 	var (
 		maxCPU *resource.Quantity
 		maxMem *resource.Quantity
