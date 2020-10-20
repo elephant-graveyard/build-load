@@ -29,10 +29,45 @@ var buildRunTestplanCmdSettings struct {
 	testplanPath string
 }
 
+var testplanCmdLong = `Run buildruns configured as steps in a testplan YAML file.
+
+Example:
+---
+namespace: test-namespace
+steps:
+- name: kaniko
+  buildSpec:
+    source:
+      url: https://github.com/EmilyEmily/docker-simple
+      contextDir: /
+    strategy:
+      name: kaniko
+      kind: ClusterBuildStrategy
+    dockerfile: Dockerfile
+    output:
+      image: docker.io/boatyard
+      credentials:
+        name: reg-cred
+
+- name: buildpacks
+  buildSpec:
+    source:
+      url: https://github.com/sclorg/nodejs-ex
+      contextDir: /
+    strategy:
+      name: buildpacks-v3
+      kind: ClusterBuildStrategy
+    output:
+      image: docker.io/boatyard
+      credentials:
+        name: reg-cred
+
+`
+
 var buildRunTestplanCmd = &cobra.Command{
 	Use:           "buildruns-testplan",
 	Short:         "Creates and executes buildruns specified in a testplan",
-	Long:          "Creates and executes buildruns specified in a testplan",
+	Long:          testplanCmdLong,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -57,6 +92,8 @@ func init() {
 	buildRunTestplanCmd.PersistentFlags().SortFlags = false
 
 	buildRunTestplanCmd.Flags().StringVar(&buildRunTestplanCmdSettings.testplanPath, "testplan", "", "testplan configuration file")
+
+	cobra.MarkFlagRequired(buildRunTestplanCmd.Flags(), "testplan")
 }
 
 func loadTestPlan(path string) (*load.TestPlan, error) {
