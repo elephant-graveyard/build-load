@@ -6,31 +6,77 @@ Create synthetic load for [shipwright-io/build](https://github.com/shipwright-io
 
 ## Examples
 
-### Kaniko buildrun
+### Build Runs
+
+#### Kaniko buildrun
 
 ```sh
 build-load \
   buildruns \
-  --build-type=kaniko \
+  --namespace test-namespace \
   --cluster-build-strategy=kaniko \
   --source-url=https://github.com/EmilyEmily/docker-simple \
-  --output-registry-hostname=docker.io \
-  --output-registry-namespace=boatyard \
-  --output-registry-secret-ref=registry-credentials
+  --output-image-url=docker.io/boatyard \
+  --output-secret-ref=registry-credentials
 ```
 
-### Buildpacks buildrun
+#### Buildpacks buildrun
 
 ```sh
 build-load \
   buildruns \
-  --build-type=buildpack \
+  --namespace test-namespace \
   --cluster-build-strategy=buildpacks-v3 \
   --source-url=https://github.com/sclorg/nodejs-ex \
-  --output-registry-hostname=docker.io \
-  --output-registry-namespace=boatyard \
-  --output-registry-secret-ref=registry-credentials
+  --output-image-url=docker.io/boatyard \
+  --output-secret-ref=registry-credentials
 ```
+
+### Test Plan
+
+#### Use Test Plan YAML
+
+```yaml
+---
+namespace: test-namespace
+steps:
+- name: kaniko
+  buildSpec:
+    source:
+      url: https://github.com/EmilyEmily/docker-simple
+      contextDir: /
+    strategy:
+      name: kaniko
+      kind: ClusterBuildStrategy
+    dockerfile: Dockerfile
+    output:
+      image: docker.io/boatyard
+      credentials:
+        name: reg-cred
+
+- name: buildpacks
+  buildSpec:
+    source:
+      url: https://github.com/sclorg/nodejs-ex
+      contextDir: /
+    strategy:
+      name: buildpacks-v3
+      kind: ClusterBuildStrategy
+    output:
+      image: docker.io/boatyard
+      credentials:
+        name: reg-cred
+```
+
+Run the test plan using:
+
+```sh
+build-load \
+  buildruns-testplan \
+  --testplan testplan.yml
+```
+
+The test plan can also be piped into the program using `-` as the filename and a here-doc YAML.
 
 ## Setup
 
