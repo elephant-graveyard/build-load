@@ -24,11 +24,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gonvenience/wrap"
-	buildv1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	buildv1alpha1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
+	pipelinev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/gonvenience/wrap"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -36,8 +37,8 @@ var (
 	defaultBuildRunWaitTimeout = time.Duration(5 * time.Minute)
 )
 
-func newBuild(name string, config BuildRunSettings) buildv1.Build {
-	build := buildv1.Build{
+func newBuild(namespace string, name string, buildSpec buildv1alpha1.BuildSpec) buildv1alpha1.Build {
+	return buildv1alpha1.Build{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Build",
 			APIVersion: "build.dev/v1alpha1",
@@ -45,58 +46,15 @@ func newBuild(name string, config BuildRunSettings) buildv1.Build {
 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: config.Namespace,
+			Namespace: namespace,
 		},
 
-		Spec: buildv1.BuildSpec{
-			Source: buildv1.GitSource{
-				URL:        config.Source.URL,
-				ContextDir: &config.Source.ContextDir,
-			},
-
-			StrategyRef: &buildv1.StrategyRef{
-				Name: config.ClusterBuildStrategy,
-				Kind: cbsptr(buildv1.ClusterBuildStrategyKind),
-			},
-
-			Output: buildv1.Image{
-				ImageURL: fmt.Sprintf("%s/%s/%s",
-					config.Output.RegistryHostname,
-					config.Output.RegistryNamespace,
-					name,
-				),
-			},
-		},
+		Spec: buildSpec,
 	}
-
-	// Optional: source registry access credentials
-	if len(config.Source.SecretRef) > 0 {
-		build.Spec.Source.SecretRef = &corev1.LocalObjectReference{
-			Name: config.Source.SecretRef,
-		}
-	}
-
-	// Optional: target/output registry access credentials
-	if len(config.Output.SecretRef) > 0 {
-		build.Spec.Output.SecretRef = &corev1.LocalObjectReference{
-			Name: config.Output.SecretRef,
-		}
-	}
-
-	// build type specific spec updates
-	switch config.BuildType {
-	case "kaniko":
-		build.Spec.Dockerfile = &config.Source.Dockerfile
-
-	case "buildpacks":
-		// nothing additional to set
-	}
-
-	return build
 }
 
-func newBuildRun(name string, build buildv1.Build) buildv1.BuildRun {
-	return buildv1.BuildRun{
+func newBuildRun(name string, build buildv1alpha1.Build) buildv1alpha1.BuildRun {
+	return buildv1alpha1.BuildRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "BuildRun",
 			APIVersion: "build.dev/v1alpha1",
@@ -107,33 +65,33 @@ func newBuildRun(name string, build buildv1.Build) buildv1.BuildRun {
 			Namespace: build.Namespace,
 		},
 
-		Spec: buildv1.BuildRunSpec{
-			BuildRef: &buildv1.BuildRef{
+		Spec: buildv1alpha1.BuildRunSpec{
+			BuildRef: &buildv1alpha1.BuildRef{
 				Name: build.Name,
 			},
 
-			ServiceAccount: &buildv1.ServiceAccount{
-				Generate: false,
+			ServiceAccount: &buildv1alpha1.ServiceAccount{
+				Generate: true,
 			},
 		},
 	}
 }
 
-func applyBuild(kubeAccess KubeAccess, build buildv1.Build) (*buildv1.Build, error) {
+func applyBuild(kubeAccess KubeAccess, build buildv1alpha1.Build) (*buildv1alpha1.Build, error) {
 	return kubeAccess.BuildClient.
 		BuildV1alpha1().
 		Builds(build.Namespace).
 		Create(&build)
 }
 
-func applyBuildRun(kubeAccess KubeAccess, buildRun buildv1.BuildRun) (*buildv1.BuildRun, error) {
+func applyBuildRun(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) (*buildv1alpha1.BuildRun, error) {
 	return kubeAccess.BuildClient.
 		BuildV1alpha1().
 		BuildRuns(buildRun.Namespace).
 		Create(&buildRun)
 }
 
-func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1.BuildRun) (*buildv1.BuildRun, error) {
+func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.BuildRun) (*buildv1alpha1.BuildRun, error) {
 	var (
 		timeout   = defaultBuildRunWaitTimeout
 		namespace = buildRun.Namespace
@@ -166,7 +124,7 @@ func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1.BuildRun
 	return buildRun, err
 }
 
-func lookUpTaskRunAndPod(kubeAccess KubeAccess, buildRun buildv1.BuildRun) (taskRun *pipelinev1.TaskRun, taskRunPod *corev1.Pod) {
+func lookUpTaskRunAndPod(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) (taskRun *pipelinev1alpha1.TaskRun, taskRunPod *corev1.Pod) {
 	if buildRun.Status.LatestTaskRunRef != nil {
 		tmp, err := kubeAccess.TektonClient.
 			TektonV1alpha1().
@@ -209,8 +167,8 @@ func lookUpTaskRunAndPod(kubeAccess KubeAccess, buildRun buildv1.BuildRun) (task
 	return taskRun, taskRunPod
 }
 
-func lookUpDockerCredentialsFromSecret(kubeAccess KubeAccess, namespace string, secretRef string) (string, string, error) {
-	secret, err := kubeAccess.Client.CoreV1().Secrets(namespace).Get(secretRef, metav1.GetOptions{})
+func lookUpDockerCredentialsFromSecret(kubeAccess KubeAccess, namespace string, secretRef *corev1.LocalObjectReference) (string, string, error) {
+	secret, err := kubeAccess.Client.CoreV1().Secrets(namespace).Get(secretRef.Name, metav1.GetOptions{})
 	if err != nil {
 		return "", "", err
 	}
@@ -239,7 +197,7 @@ func lookUpDockerCredentialsFromSecret(kubeAccess KubeAccess, namespace string, 
 	return "", "", fmt.Errorf("failed to find authentication credentials in secret data")
 }
 
-func buildRunError(kubeAccess KubeAccess, buildRun buildv1.BuildRun) error {
+func buildRunError(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) error {
 	if buildRun.Status.Succeeded == corev1.ConditionTrue {
 		return nil
 	}

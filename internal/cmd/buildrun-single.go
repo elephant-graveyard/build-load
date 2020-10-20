@@ -25,8 +25,9 @@ import (
 )
 
 var buildRunOnceCmdSettings struct {
-	parallel int
-	config   load.BuildRunSettings
+	parallel  int
+	namingCfg load.NamingConfig
+	buildCfg  load.BuildConfig
 }
 
 var buildRunOnceCmd = &cobra.Command{
@@ -41,11 +42,11 @@ var buildRunOnceCmd = &cobra.Command{
 			return err
 		}
 
-		if err := load.CheckSystemAndConfig(*kubeAccess, buildRunOnceCmdSettings.config, buildRunOnceCmdSettings.parallel); err != nil {
+		if err := load.CheckSystemAndConfig(*kubeAccess, buildRunOnceCmdSettings.buildCfg, buildRunOnceCmdSettings.parallel); err != nil {
 			return err
 		}
 
-		buildRunResults, err := load.ExecuteParallelBuildRuns(*kubeAccess, buildRunOnceCmdSettings.config, buildRunOnceCmdSettings.parallel)
+		buildRunResults, err := load.ExecuteParallelBuildRuns(*kubeAccess, buildRunOnceCmdSettings.namingCfg, buildRunOnceCmdSettings.buildCfg, buildRunOnceCmdSettings.parallel)
 		if err != nil {
 			return err
 		}
@@ -63,5 +64,7 @@ func init() {
 	buildRunOnceCmd.PersistentFlags().SortFlags = false
 
 	buildRunOnceCmd.Flags().IntVar(&buildRunOnceCmdSettings.parallel, "parallel", 1, "number of parallel buildruns")
-	applyBuildRunSettingsFlags(buildRunOnceCmd, &buildRunOnceCmdSettings.config)
+
+	applyNamingFlags(buildRunOnceCmd, &buildRunOnceCmdSettings.namingCfg)
+	applyBuildRunSettingsFlags(buildRunOnceCmd, &buildRunOnceCmdSettings.buildCfg)
 }

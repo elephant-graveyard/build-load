@@ -20,7 +20,6 @@ import (
 	"os"
 	"path/filepath"
 
-	buildv1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
 	buildclient "github.com/shipwright-io/build/pkg/client/build/clientset/versioned"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
@@ -82,10 +81,6 @@ func NewKubeAccess() (*KubeAccess, error) {
 		BuildClient:  buildClient,
 		TektonClient: tektonClient,
 	}, nil
-}
-
-func cbsptr(o buildv1.BuildStrategyKind) *buildv1.BuildStrategyKind {
-	return &o
 }
 
 func wrapErrorChanResults(errors chan error, format string, a ...interface{}) error {

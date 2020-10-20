@@ -17,12 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/homeport/build-load/internal/load"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 var buildRunTestplanCmdSettings struct {
@@ -97,36 +96,16 @@ func init() {
 }
 
 func loadTestPlan(path string) (*load.TestPlan, error) {
-	var data []byte
-	var err error
-
 	switch path {
 	case "-":
-		data, err = ioutil.ReadAll(os.Stdin)
+		return load.NewTestPlan(os.Stdin)
 
 	default:
-		data, err = ioutil.ReadFile(path)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	var testplan load.TestPlan
-	if err := yaml.Unmarshal(data, &testplan); err != nil {
-		return nil, err
-	}
-
-	// apply implicit defaults
-	for i := range testplan.Steps {
-		if len(testplan.Steps[i].BuildRunSettings.Source.Dockerfile) == 0 {
-			testplan.Steps[i].BuildRunSettings.Source.Dockerfile = "Dockerfile"
+		file, err := os.Open(filepath.Clean(path))
+		if err != nil {
+			return nil, err
 		}
 
-		if len(testplan.Steps[i].BuildRunSettings.Source.ContextDir) == 0 {
-			testplan.Steps[i].BuildRunSettings.Source.ContextDir = "/"
-		}
+		return load.NewTestPlan(file)
 	}
-
-	return &testplan, nil
 }

@@ -25,6 +25,8 @@ import (
 	"net/url"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gonvenience/wrap"
 )
@@ -38,7 +40,11 @@ type ibmCloudIdentityToken struct {
 	Scope        string `json:"scope"`
 }
 
-func deleteContainerImage(kubeAccess KubeAccess, namespace string, secretRef string, imageURL string) error {
+func deleteContainerImage(kubeAccess KubeAccess, namespace string, secretRef *corev1.LocalObjectReference, imageURL string) error {
+	if secretRef == nil {
+		return fmt.Errorf("unable to delete image %s, because no secret reference with access credentials is configured", imageURL)
+	}
+
 	username, password, err := lookUpDockerCredentialsFromSecret(kubeAccess, namespace, secretRef)
 	if err != nil {
 		return err

@@ -26,7 +26,8 @@ var buildRunSeriesCmdSettings struct {
 	buildTestsMin       int
 	buildTestsMax       int
 	buildTestsIncrement int
-	config              load.BuildRunSettings
+	namingCfg           load.NamingConfig
+	buildCfg            load.BuildConfig
 }
 
 var buildRunSeriesCmd = &cobra.Command{
@@ -41,11 +42,11 @@ var buildRunSeriesCmd = &cobra.Command{
 			return err
 		}
 
-		if err := load.CheckSystemAndConfig(*kubeAccess, buildRunSeriesCmdSettings.config, buildRunSeriesCmdSettings.buildTestsMax); err != nil {
+		if err := load.CheckSystemAndConfig(*kubeAccess, buildRunSeriesCmdSettings.buildCfg, buildRunSeriesCmdSettings.buildTestsMax); err != nil {
 			return err
 		}
 
-		results, err := load.ExecuteSeriesOfParallelBuildRuns(*kubeAccess, buildRunSeriesCmdSettings.config, buildRunSeriesCmdSettings.buildTestsMin, buildRunSeriesCmdSettings.buildTestsMax, buildRunSeriesCmdSettings.buildTestsIncrement)
+		results, err := load.ExecuteSeriesOfParallelBuildRuns(*kubeAccess, buildRunSeriesCmdSettings.namingCfg, buildRunSeriesCmdSettings.buildCfg, buildRunSeriesCmdSettings.buildTestsMin, buildRunSeriesCmdSettings.buildTestsMax, buildRunSeriesCmdSettings.buildTestsIncrement)
 		if err != nil {
 			return err
 		}
@@ -63,5 +64,7 @@ func init() {
 	buildRunSeriesCmd.Flags().IntVar(&buildRunSeriesCmdSettings.buildTestsMin, "build-tests-min", 5, "lowest number of parallel builds to test")
 	buildRunSeriesCmd.Flags().IntVar(&buildRunSeriesCmdSettings.buildTestsMax, "build-tests-max", 100, "highest number of parallel builds to test")
 	buildRunSeriesCmd.Flags().IntVar(&buildRunSeriesCmdSettings.buildTestsIncrement, "build-tests-increment", 5, "increment for spinning up the number of parallel tests")
-	applyBuildRunSettingsFlags(buildRunSeriesCmd, &buildRunSeriesCmdSettings.config)
+
+	applyNamingFlags(buildRunSeriesCmd, &buildRunSeriesCmdSettings.namingCfg)
+	applyBuildRunSettingsFlags(buildRunSeriesCmd, &buildRunSeriesCmdSettings.buildCfg)
 }
