@@ -25,6 +25,7 @@ import (
 )
 
 var buildRunTestplanCmdSettings struct {
+	namespace    string
 	testplanPath string
 }
 
@@ -80,6 +81,11 @@ var buildRunTestplanCmd = &cobra.Command{
 			return err
 		}
 
+		// Override testplan namespace if command line flag namespace is used
+		if len(buildRunTestplanCmdSettings.namespace) > 0 {
+			testplan.Namespace = buildRunTestplanCmdSettings.namespace
+		}
+
 		return load.ExecuteTestPlan(*kubeAccess, *testplan)
 	},
 }
@@ -90,6 +96,7 @@ func init() {
 	buildRunTestplanCmd.Flags().SortFlags = false
 	buildRunTestplanCmd.PersistentFlags().SortFlags = false
 
+	buildRunTestplanCmd.Flags().StringVar(&buildRunTestplanCmdSettings.namespace, "namespace", "", "namespace to run tests in (takes precedence over namespace in testplan YAML)")
 	buildRunTestplanCmd.Flags().StringVar(&buildRunTestplanCmdSettings.testplanPath, "testplan", "", "testplan configuration file")
 
 	cobra.MarkFlagRequired(buildRunTestplanCmd.Flags(), "testplan")
