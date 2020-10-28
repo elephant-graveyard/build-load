@@ -53,6 +53,7 @@ type NamingConfig struct {
 type BuildConfig struct {
 	ClusterBuildStrategy string
 	SourceURL            string
+	SourceRevision       string
 	SourceContextDir     string
 	SourceSecretRef      string
 	SourceDockerfile     string
@@ -162,6 +163,7 @@ func createBuildSpec(name string, buildCfg BuildConfig) (*buildv1alpha.BuildSpec
 
 		Source: buildv1alpha.GitSource{
 			URL:        buildCfg.SourceURL,
+			Revision:   pointer.StringPtr(buildCfg.SourceRevision),
 			ContextDir: pointer.StringPtr(buildCfg.SourceContextDir),
 			SecretRef:  secrefRef(buildCfg.SourceSecretRef),
 		},

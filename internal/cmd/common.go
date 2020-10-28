@@ -64,6 +64,7 @@ func applyBuildRunSettingsFlags(cmd *cobra.Command, buildCfg *load.BuildConfig) 
 
 	pf.StringVar(&buildCfg.SourceURL, "source-url", "", "specify source URL to build from")
 	pf.StringVar(&buildCfg.SourceContextDir, "source-context", "/", "specify directory to be used in the source repository")
+	pf.StringVar(&buildCfg.SourceRevision, "source-revision", "master", "specify the branch, tag, or commit to be used")
 	pf.StringVar(&buildCfg.SourceSecretRef, "source-secret", "", "specify secret to be used to access the source")
 	pf.StringVar(&buildCfg.SourceDockerfile, "dockerfile", "Dockerfile", "specify name of the docker file for kaniko builds")
 
