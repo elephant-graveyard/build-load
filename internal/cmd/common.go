@@ -48,7 +48,7 @@ Examples:
       --cluster-build-strategy=buildpacks-v3 \
       --source-url=https://github.com/sclorg/nodejs-ex \
       --output-image-url=docker.io/boatyard \
-      --output-secret-ref=registry-credentials
+      --output-secret-ref=registry-credentials \
       --parallel=10}
 `)
 
