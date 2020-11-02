@@ -28,6 +28,7 @@ import (
 	buildclient "github.com/shipwright-io/build/pkg/client/build/clientset/versioned"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"gopkg.in/yaml.v3"
 	"k8s.io/client-go/kubernetes"
@@ -59,6 +60,7 @@ type BuildConfig struct {
 	SourceDockerfile     string
 	OutputImageURL       string
 	OutputSecretRef      string
+	Timeout              time.Duration
 }
 
 // BuildRunResultSet is an aggregated result set based on multiple
@@ -174,6 +176,16 @@ func createBuildSpec(name string, buildCfg BuildConfig) (*buildv1alpha.BuildSpec
 			ImageURL:  outputImageURL,
 			SecretRef: secrefRef(buildCfg.OutputSecretRef),
 		},
+
+		Timeout: func() *metav1.Duration {
+			if buildCfg.Timeout != time.Duration(0) {
+				return &metav1.Duration{
+					Duration: buildCfg.Timeout,
+				}
+			}
+
+			return nil
+		}(),
 	}, nil
 }
 

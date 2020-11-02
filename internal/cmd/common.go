@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"time"
+
 	"github.com/gonvenience/bunt"
 	"github.com/homeport/build-load/internal/load"
 	"github.com/spf13/cobra"
@@ -70,6 +72,8 @@ func applyBuildRunSettingsFlags(cmd *cobra.Command, buildCfg *load.BuildConfig) 
 
 	pf.StringVar(&buildCfg.OutputImageURL, "output-image-url", "", "output image URL")
 	pf.StringVar(&buildCfg.OutputSecretRef, "output-secret-ref", "", "secret that contains the access credentials for the output registry")
+
+	pf.DurationVar(&buildCfg.Timeout, "timeout", time.Duration(0), "defines the maximum runtime of a build run")
 
 	cobra.MarkFlagRequired(pf, "source-url")
 	cobra.MarkFlagRequired(pf, "output-image-url")
