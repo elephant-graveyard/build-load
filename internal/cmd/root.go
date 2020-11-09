@@ -22,6 +22,7 @@ import (
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/neat"
+	"github.com/homeport/build-load/internal/load"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -52,6 +53,8 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+
+	rootCmd.PersistentFlags().BoolVar(&load.Debug, "debug", false, "enable additional output messages")
 }
 
 func initConfig() {
