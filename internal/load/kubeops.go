@@ -53,7 +53,7 @@ func newBuild(namespace string, name string, buildSpec buildv1alpha1.BuildSpec) 
 	}
 }
 
-func newBuildRun(name string, build buildv1alpha1.Build) buildv1alpha1.BuildRun {
+func newBuildRun(name string, build buildv1alpha1.Build, generateServiceAccount bool) buildv1alpha1.BuildRun {
 	return buildv1alpha1.BuildRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "BuildRun",
@@ -71,7 +71,7 @@ func newBuildRun(name string, build buildv1alpha1.Build) buildv1alpha1.BuildRun 
 			},
 
 			ServiceAccount: &buildv1alpha1.ServiceAccount{
-				Generate: true,
+				Generate: generateServiceAccount,
 			},
 		},
 	}

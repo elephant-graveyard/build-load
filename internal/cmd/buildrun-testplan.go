@@ -25,8 +25,9 @@ import (
 )
 
 var buildRunTestplanCmdSettings struct {
-	namespace    string
-	testplanPath string
+	namespace              string
+	generateServiceAccount bool
+	testplanPath           string
 }
 
 var testplanCmdLong = `Run buildruns configured as steps in a testplan YAML file.
@@ -97,6 +98,7 @@ func init() {
 	buildRunTestplanCmd.PersistentFlags().SortFlags = false
 
 	buildRunTestplanCmd.Flags().StringVar(&buildRunTestplanCmdSettings.namespace, "namespace", "", "namespace to run tests in (takes precedence over namespace in testplan YAML)")
+	buildRunTestplanCmd.Flags().BoolVar(&buildRunTestplanCmdSettings.generateServiceAccount, "generate-service-account", true, "generate service account for build")
 	buildRunTestplanCmd.Flags().StringVar(&buildRunTestplanCmdSettings.testplanPath, "testplan", "", "testplan configuration file")
 
 	cobra.MarkFlagRequired(buildRunTestplanCmd.Flags(), "testplan")

@@ -140,7 +140,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 }
 
 // ExecuteSingleBuildRun executes a single buildrun based on the given settings
-func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string, buildSpec buildv1alpha1.BuildSpec) (*BuildRunResult, error) {
+func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string, generateServiceAccount bool, buildSpec buildv1alpha1.BuildSpec) (*BuildRunResult, error) {
 	build, err := applyBuild(kubeAccess, newBuild(namespace, name, buildSpec))
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 		}
 	}()
 
-	buildRun, err := applyBuildRun(kubeAccess, newBuildRun(name, *build))
+	buildRun, err := applyBuildRun(kubeAccess, newBuildRun(name, *build, generateServiceAccount))
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +228,7 @@ func ExecuteParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, bui
 				return
 			}
 
-			result, err := ExecuteSingleBuildRun(kubeAccess, namespace, name, *buildSpec)
+			result, err := ExecuteSingleBuildRun(kubeAccess, namespace, name, buildCfg.GenerateServiceAccount, *buildSpec)
 			if err != nil {
 				errors <- err
 				return
@@ -286,7 +286,7 @@ func ExecuteTestPlan(kubeAccess KubeAccess, testplan TestPlan) error {
 
 		step.BuildSpec.Output.ImageURL = outputImageURL
 
-		if _, err := ExecuteSingleBuildRun(kubeAccess, testplan.Namespace, name, step.BuildSpec); err != nil {
+		if _, err := ExecuteSingleBuildRun(kubeAccess, testplan.Namespace, name, testplan.GenerateServiceAccount, step.BuildSpec); err != nil {
 			return err
 		}
 	}
