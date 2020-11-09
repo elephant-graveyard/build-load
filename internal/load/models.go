@@ -52,15 +52,16 @@ type NamingConfig struct {
 
 // BuildConfig contains all fields required to setup a buildRun
 type BuildConfig struct {
-	ClusterBuildStrategy string
-	SourceURL            string
-	SourceRevision       string
-	SourceContextDir     string
-	SourceSecretRef      string
-	SourceDockerfile     string
-	OutputImageURL       string
-	OutputSecretRef      string
-	Timeout              time.Duration
+	ClusterBuildStrategy   string
+	SourceURL              string
+	SourceRevision         string
+	SourceContextDir       string
+	SourceSecretRef        string
+	SourceDockerfile       string
+	GenerateServiceAccount bool
+	OutputImageURL         string
+	OutputSecretRef        string
+	Timeout                time.Duration
 }
 
 // BuildRunResultSet is an aggregated result set based on multiple
@@ -85,8 +86,9 @@ type BuildRunResult struct {
 
 // TestPlan is a plan with steps that define tests
 type TestPlan struct {
-	Namespace string `yaml:"namespace" json:"namespace"`
-	Steps     []struct {
+	Namespace              string `yaml:"namespace" json:"namespace"`
+	GenerateServiceAccount bool   `yaml:"generateServiceAccount" json:"generateServiceAccount"`
+	Steps                  []struct {
 		Name      string                 `yaml:"name" json:"name"`
 		BuildSpec buildv1alpha.BuildSpec `yaml:"buildSpec" json:"buildSpec"`
 	} `yaml:"steps" json:"steps"`

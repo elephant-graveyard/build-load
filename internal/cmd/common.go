@@ -64,6 +64,8 @@ func applyBuildRunSettingsFlags(cmd *cobra.Command, buildCfg *load.BuildConfig) 
 
 	pf.StringVar(&buildCfg.ClusterBuildStrategy, "cluster-build-strategy", "", "specify which cluster build strategy to be tested")
 
+	pf.BoolVar(&buildCfg.GenerateServiceAccount, "generate-service-account", true, "generate service account for each build")
+
 	pf.StringVar(&buildCfg.SourceURL, "source-url", "", "specify source URL to build from")
 	pf.StringVar(&buildCfg.SourceContextDir, "source-context", "/", "specify directory to be used in the source repository")
 	pf.StringVar(&buildCfg.SourceRevision, "source-revision", "master", "specify the branch, tag, or commit to be used")
