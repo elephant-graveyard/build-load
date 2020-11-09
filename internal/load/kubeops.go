@@ -78,6 +78,7 @@ func newBuildRun(name string, build buildv1alpha1.Build, generateServiceAccount 
 }
 
 func applyBuild(kubeAccess KubeAccess, build buildv1alpha1.Build) (*buildv1alpha1.Build, error) {
+	debug("Create build %s", build.Name)
 	return kubeAccess.BuildClient.
 		BuildV1alpha1().
 		Builds(build.Namespace).
@@ -85,6 +86,7 @@ func applyBuild(kubeAccess KubeAccess, build buildv1alpha1.Build) (*buildv1alpha
 }
 
 func applyBuildRun(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) (*buildv1alpha1.BuildRun, error) {
+	debug("Create buildrun %s", buildRun.Name)
 	return kubeAccess.BuildClient.
 		BuildV1alpha1().
 		BuildRuns(buildRun.Namespace).
@@ -94,6 +96,7 @@ func applyBuildRun(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) (*bui
 func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.BuildRun) (*buildv1alpha1.BuildRun, error) {
 	var (
 		timeout   = defaultBuildRunWaitTimeout
+		interval  = 5 * time.Second
 		namespace = buildRun.Namespace
 		name      = buildRun.Name
 	)
@@ -102,7 +105,8 @@ func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.Bu
 		timeout = buildRun.Spec.Timeout.Duration
 	}
 
-	err := wait.PollImmediate(5*time.Second, timeout, func() (done bool, err error) {
+	debug("Polling every %v to wait for completion of buildrun %s", interval, buildRun.Name)
+	err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
 		buildRun, err = kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
 			return false, err

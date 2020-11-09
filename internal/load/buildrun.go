@@ -59,7 +59,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 				}
 
 			case http.StatusForbidden:
-				warn("The current permissions do not allow to check whether build strategy CadetBlue{*%s*} is available.\n\n", buildCfg.ClusterBuildStrategy)
+				warn("The current permissions do not allow to check whether build strategy CadetBlue{*%s*} is available.\n", buildCfg.ClusterBuildStrategy)
 			}
 		}
 	}
@@ -147,6 +147,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 	}
 
 	defer func() {
+		debug("Delete build %s", build.Name)
 		if err := kubeAccess.BuildClient.BuildV1alpha1().Builds(build.Namespace).Delete(build.Name, &metav1.DeleteOptions{}); err != nil {
 			warn("failed to delete build %s, %v\n", name, err)
 		}
@@ -158,6 +159,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 	}
 
 	defer func() {
+		debug("Delete buildrun %s", buildRun.Name)
 		if err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(buildRun.Namespace).Delete(buildRun.Name, &metav1.DeleteOptions{}); err != nil {
 			warn("failed to delete buildrun %s, %v\n", name, err)
 		}
@@ -169,6 +171,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 	}
 
 	defer func() {
+		debug("Delete container image %s", buildRun.Status.BuildSpec.Output.ImageURL)
 		if err := deleteContainerImage(kubeAccess, buildRun.Namespace, build.Spec.Output.SecretRef, buildRun.Status.BuildSpec.Output.ImageURL); err != nil {
 			warn("failed to delete image %s, %v\n", buildRun.Status.BuildSpec.Output.ImageURL, err)
 		}
@@ -204,6 +207,12 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 				totalTektonStepsTime
 		}
 	}
+
+	debug("buildrun _%s/%s_ results: %v",
+		namespace,
+		name,
+		buildRunResult,
+	)
 
 	return buildRunResult, nil
 }

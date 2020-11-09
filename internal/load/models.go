@@ -30,6 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/gonvenience/bunt"
 	"gopkg.in/yaml.v3"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -92,6 +93,24 @@ type TestPlan struct {
 		Name      string                 `yaml:"name" json:"name"`
 		BuildSpec buildv1alpha.BuildSpec `yaml:"buildSpec" json:"buildSpec"`
 	} `yaml:"steps" json:"steps"`
+}
+
+func (brr BuildRunResult) String() string {
+	var duration = func(d time.Duration) string {
+		if d > time.Duration(0) {
+			return d.String()
+		}
+
+		return bunt.Sprintf("DarkGray{_(no data)_}")
+	}
+
+	return strings.Join([]string{
+		bunt.Sprintf("_TotalBuildRunTime_=%v", duration(brr.TotalBuildRunTime)),
+		bunt.Sprintf("_BuildRunRampUpDuration_=%v", duration(brr.BuildRunRampUpDuration)),
+		bunt.Sprintf("_TaskRunRampUpDuration_=%v", duration(brr.TaskRunRampUpDuration)),
+		bunt.Sprintf("_PodRampUpDuration_=%v", duration(brr.PodRampUpDuration)),
+		bunt.Sprintf("_InternalProcessingTime_=%v", duration(brr.InternalProcessingTime)),
+	}, ", ")
 }
 
 // NewTestPlan creates a test plan based on the provided input

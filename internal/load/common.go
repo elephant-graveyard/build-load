@@ -30,6 +30,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// Debug enables or disables additional output
+var Debug bool
+
 func lookUpKubeConfigFilePath() (string, error) {
 	if value, present := os.LookupEnv("KUBECONFIG"); present {
 		return value, nil
@@ -105,4 +108,10 @@ func wrapErrorChanResults(errors chan error, format string, a ...interface{}) er
 
 func warn(format string, a ...interface{}) {
 	bunt.Printf("DarkOrange{*Warning:*} %s\n", bunt.Sprintf(format, a...))
+}
+
+func debug(format string, a ...interface{}) {
+	if Debug {
+		bunt.Printf("DimGray{*Debug:*} %s\n", bunt.Sprintf(format, a...))
+	}
 }
