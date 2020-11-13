@@ -177,19 +177,17 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 		}
 	}()
 
-	var buildRunResult = &BuildRunResult{
-		TotalBuildRunTime:      buildRun.Status.CompletionTime.Time.Sub(buildRun.ObjectMeta.CreationTimestamp.Time),
-		BuildRunRampUpDuration: time.Duration(-1),
-		TaskRunRampUpDuration:  time.Duration(-1),
-		PodRampUpDuration:      time.Duration(-1),
-		InternalProcessingTime: time.Duration(-1),
-	}
+	totalBuildRunTime := buildRun.Status.CompletionTime.Time.Sub(buildRun.ObjectMeta.CreationTimestamp.Time)
+	buildRunRampUpDuration := time.Duration(-1)
+	taskRunRampUpDuration := time.Duration(-1)
+	podRampUpDuration := time.Duration(-1)
+	internalProcessingTime := time.Duration(-1)
 
 	taskRun, pod := lookUpTaskRunAndPod(kubeAccess, *buildRun)
 	if pod != nil {
 		var lastInitPodIdx = len(pod.Status.InitContainerStatuses) - 1
 		var lastInitPod = pod.Status.InitContainerStatuses[lastInitPodIdx]
-		buildRunResult.PodRampUpDuration = lastInitPod.State.Terminated.FinishedAt.Sub(pod.CreationTimestamp.Time)
+		podRampUpDuration = lastInitPod.State.Terminated.FinishedAt.Sub(pod.CreationTimestamp.Time)
 
 		if taskRun != nil {
 			var totalTektonStepsTime time.Duration
@@ -197,15 +195,23 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 				totalTektonStepsTime += step.Terminated.FinishedAt.Time.Sub(step.Terminated.StartedAt.Time)
 			}
 
-			buildRunResult.BuildRunRampUpDuration = taskRun.CreationTimestamp.Time.Sub(buildRun.CreationTimestamp.Time)
-			buildRunResult.TaskRunRampUpDuration = pod.CreationTimestamp.Time.Sub(taskRun.CreationTimestamp.Time)
+			buildRunRampUpDuration = taskRun.CreationTimestamp.Time.Sub(buildRun.CreationTimestamp.Time)
+			taskRunRampUpDuration = pod.CreationTimestamp.Time.Sub(taskRun.CreationTimestamp.Time)
 
-			buildRunResult.InternalProcessingTime = buildRunResult.TotalBuildRunTime -
-				buildRunResult.BuildRunRampUpDuration -
-				buildRunResult.TaskRunRampUpDuration -
-				buildRunResult.PodRampUpDuration -
+			internalProcessingTime = totalBuildRunTime -
+				buildRunRampUpDuration -
+				taskRunRampUpDuration -
+				podRampUpDuration -
 				totalTektonStepsTime
 		}
+	}
+
+	buildRunResult := &BuildRunResult{
+		Value{TotalBuildRunTime, totalBuildRunTime},
+		Value{BuildRunRampUpDuration, buildRunRampUpDuration},
+		Value{TaskRunRampUpDuration, taskRunRampUpDuration},
+		Value{PodRampUpDuration, podRampUpDuration},
+		Value{InternalProcessingTime, internalProcessingTime},
 	}
 
 	debug("buildrun _%s/%s_ results: %v",

@@ -37,6 +37,15 @@ import (
 	"k8s.io/utils/pointer"
 )
 
+// Naming constants for the buildrun results
+const (
+	TotalBuildRunTime      = "total time between buildrun creation until finish"
+	BuildRunRampUpDuration = "time between buildrun creation and taskrun creation"
+	TaskRunRampUpDuration  = "time between taskrun creation and tekton pod creation"
+	PodRampUpDuration      = "time between tekton pod creation and first container start"
+	InternalProcessingTime = "remaining internal processing time"
+)
+
 // KubeAccess contains Kubernetes cluster access objects in a single place
 type KubeAccess struct {
 	RestConfig   *rest.Config
@@ -76,14 +85,14 @@ type BuildRunResultSet struct {
 	Median  BuildRunResult
 }
 
-// BuildRunResult contains the raw time results of a buildrun
-type BuildRunResult struct {
-	TotalBuildRunTime      time.Duration
-	BuildRunRampUpDuration time.Duration
-	TaskRunRampUpDuration  time.Duration
-	PodRampUpDuration      time.Duration
-	InternalProcessingTime time.Duration
+// Value describes a time duration with a description (explanation)
+type Value struct {
+	Description string
+	Value       time.Duration
 }
+
+// BuildRunResult contains the raw time results of a buildrun
+type BuildRunResult []Value
 
 // TestPlan is a plan with steps that define tests
 type TestPlan struct {
@@ -97,20 +106,30 @@ type TestPlan struct {
 
 func (brr BuildRunResult) String() string {
 	var duration = func(d time.Duration) string {
-		if d > time.Duration(0) {
+		if d >= time.Duration(0) {
 			return d.String()
 		}
 
 		return bunt.Sprintf("DarkGray{_(no data)_}")
 	}
 
-	return strings.Join([]string{
-		bunt.Sprintf("_TotalBuildRunTime_=%v", duration(brr.TotalBuildRunTime)),
-		bunt.Sprintf("_BuildRunRampUpDuration_=%v", duration(brr.BuildRunRampUpDuration)),
-		bunt.Sprintf("_TaskRunRampUpDuration_=%v", duration(brr.TaskRunRampUpDuration)),
-		bunt.Sprintf("_PodRampUpDuration_=%v", duration(brr.PodRampUpDuration)),
-		bunt.Sprintf("_InternalProcessingTime_=%v", duration(brr.InternalProcessingTime)),
-	}, ", ")
+	var tmp = []string{}
+	for _, value := range brr {
+		tmp = append(tmp, bunt.Sprintf("_%s_=%v", value.Description, duration(value.Value)))
+	}
+
+	return strings.Join(tmp, ", ")
+}
+
+// ValueOf returns the value that matches with the given description
+func (brr BuildRunResult) ValueOf(description string) time.Duration {
+	for _, value := range brr {
+		if value.Description == description {
+			return value.Value
+		}
+	}
+
+	return time.Duration(-1)
 }
 
 // NewTestPlan creates a test plan based on the provided input
