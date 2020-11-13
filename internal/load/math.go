@@ -78,11 +78,11 @@ func averageBuildRunResult(results []BuildRunResult) BuildRunResult {
 	}
 
 	return BuildRunResult{
-		TotalBuildRunTime:      time.Duration(sumTotalBuildRunTime.Seconds()/float64(length)) * time.Second,
-		BuildRunRampUpDuration: time.Duration(sumBuildRunRampUpDuration.Seconds()/float64(length)) * time.Second,
-		TaskRunRampUpDuration:  time.Duration(sumTaskRunRampUpDuration.Seconds()/float64(length)) * time.Second,
-		PodRampUpDuration:      time.Duration(sumPodRampUpDuration.Seconds()/float64(length)) * time.Second,
-		InternalProcessingTime: time.Duration(sumInternalProcessingTime.Seconds()/float64(length)) * time.Second,
+		TotalBuildRunTime:      sumTotalBuildRunTime / time.Duration(length),
+		BuildRunRampUpDuration: sumBuildRunRampUpDuration / time.Duration(length),
+		TaskRunRampUpDuration:  sumTaskRunRampUpDuration / time.Duration(length),
+		PodRampUpDuration:      sumPodRampUpDuration / time.Duration(length),
+		InternalProcessingTime: sumInternalProcessingTime / time.Duration(length),
 	}
 }
 

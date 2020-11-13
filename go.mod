@@ -9,6 +9,8 @@ require (
 	github.com/gonvenience/text v1.0.5
 	github.com/gonvenience/wrap v1.1.0
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/onsi/ginkgo v1.12.0
+	github.com/onsi/gomega v1.9.0
 	github.com/shipwright-io/build v0.1.1
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.1
