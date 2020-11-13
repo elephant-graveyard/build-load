@@ -17,6 +17,7 @@ limitations under the License.
 package load
 
 import (
+	"math"
 	"sort"
 	"time"
 )
@@ -24,79 +25,94 @@ import (
 // CalculateBuildRunResultSet creates a buildrun result set using a list of
 // buildrun results to get the minimum, mean, median, and maximum results
 func CalculateBuildRunResultSet(results []BuildRunResult) BuildRunResultSet {
-	// sort results based on the total buildrun time
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].TotalBuildRunTime < results[j].TotalBuildRunTime
-	})
-
-	var (
-		min *BuildRunResult
-		max *BuildRunResult
-	)
-
-	for i := range results {
-		buildRunResult := results[i]
-
-		if min == nil || min.TotalBuildRunTime > buildRunResult.TotalBuildRunTime {
-			min = &buildRunResult
-		}
-
-		if max == nil || max.TotalBuildRunTime < buildRunResult.TotalBuildRunTime {
-			max = &buildRunResult
-		}
-	}
-
 	return BuildRunResultSet{
 		NumberOfResults: len(results),
-		Minimum:         *min,
-		Maximum:         *max,
-		Mean:            averageBuildRunResult(results),
-		Median:          medianBuildRunResult(results),
+		Minimum:         min(results),
+		Maximum:         max(results),
+		Mean:            mean(results),
+		Median:          median(results),
 	}
 }
 
-func averageBuildRunResult(results []BuildRunResult) BuildRunResult {
-	var length = len(results)
-	if length == 0 {
-		panic("no results available")
+func emptyBuildRunResult(reference BuildRunResult, init time.Duration) (result BuildRunResult) {
+	for _, value := range reference {
+		result = append(result, Value{Description: value.Description, Value: init})
 	}
 
-	var (
-		sumTotalBuildRunTime      time.Duration
-		sumBuildRunRampUpDuration time.Duration
-		sumTaskRunRampUpDuration  time.Duration
-		sumPodRampUpDuration      time.Duration
-		sumInternalProcessingTime time.Duration
-	)
-
-	for i := range results {
-		sumTotalBuildRunTime += results[i].TotalBuildRunTime
-		sumBuildRunRampUpDuration += results[i].BuildRunRampUpDuration
-		sumTaskRunRampUpDuration += results[i].TaskRunRampUpDuration
-		sumPodRampUpDuration += results[i].PodRampUpDuration
-		sumInternalProcessingTime += results[i].InternalProcessingTime
-	}
-
-	return BuildRunResult{
-		TotalBuildRunTime:      sumTotalBuildRunTime / time.Duration(length),
-		BuildRunRampUpDuration: sumBuildRunRampUpDuration / time.Duration(length),
-		TaskRunRampUpDuration:  sumTaskRunRampUpDuration / time.Duration(length),
-		PodRampUpDuration:      sumPodRampUpDuration / time.Duration(length),
-		InternalProcessingTime: sumInternalProcessingTime / time.Duration(length),
-	}
+	return
 }
 
-func medianBuildRunResult(results []BuildRunResult) BuildRunResult {
-	var length = len(results)
-	if length == 0 {
-		panic("no results available")
+func min(results []BuildRunResult) BuildRunResult {
+	tmp := emptyBuildRunResult(results[0], time.Duration(math.MaxInt64))
+	for _, buildRunResult := range results {
+		for i, value := range buildRunResult {
+			if value.Value < tmp[i].Value {
+				tmp[i].Value = value.Value
+			}
+		}
 	}
 
-	switch length % 2 {
-	case 0:
-		return averageBuildRunResult(results[length/2-1 : length/2])
+	return tmp
+}
 
-	default:
-		return results[(length-1)/2]
+func max(results []BuildRunResult) BuildRunResult {
+	tmp := emptyBuildRunResult(results[0], time.Duration(math.MinInt64))
+	for _, buildRunResult := range results {
+		for i, value := range buildRunResult {
+			if value.Value > tmp[i].Value {
+				tmp[i].Value = value.Value
+			}
+		}
 	}
+
+	return tmp
+}
+
+func mean(results []BuildRunResult) BuildRunResult {
+	tmp := emptyBuildRunResult(results[0], time.Duration(0))
+	for _, buildRunResult := range results {
+		for i, value := range buildRunResult {
+			tmp[i].Value += value.Value
+		}
+	}
+
+	for i := range tmp {
+		tmp[i].Value /= time.Duration(len(results))
+	}
+
+	return tmp
+}
+
+func median(results []BuildRunResult) BuildRunResult {
+	type values struct {
+		values []time.Duration
+	}
+
+	listOfValues := make([]values, len(results[0]))
+	for _, buildRunResult := range results {
+		for i, value := range buildRunResult {
+			listOfValues[i].values = append(listOfValues[i].values, value.Value)
+		}
+	}
+
+	for idx := range listOfValues {
+		sort.Slice(listOfValues[idx].values, func(i, j int) bool {
+			return listOfValues[idx].values[i] < listOfValues[idx].values[j]
+		})
+	}
+
+	length := len(results)
+	tmp := emptyBuildRunResult(results[0], time.Duration(0))
+	for i := range tmp {
+		switch length % 2 {
+		case 0:
+			l, r := listOfValues[i].values[length/2-1], listOfValues[i].values[length/2]
+			tmp[i].Value = (l + r) / time.Duration(2)
+
+		default:
+			tmp[i].Value = listOfValues[i].values[(length-1)/2]
+		}
+	}
+
+	return tmp
 }

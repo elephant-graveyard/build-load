@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"html/template"
 	"os"
-	"time"
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/neat"
@@ -37,60 +36,20 @@ func (brs BuildRunResultSet) String() string {
 		return tmp
 	}
 
-	cnvfnc := func(description string, args ...time.Duration) []string {
-		var tmp = []string{bunt.Sprint(description)}
-		for _, duration := range args {
-			tmp = append(tmp, duration.String())
+	headline := bold("Description", "Minimum", "Mean", "Median", "Maximum")
+	tableData := [][]string{headline}
+
+	for _, entry := range brs.Minimum {
+		line := make([]string, len(headline))
+		line[0] = entry.Description
+
+		tableData = append(tableData, line)
+	}
+
+	for i, x := range []BuildRunResult{brs.Minimum, brs.Mean, brs.Median, brs.Maximum} {
+		for j, value := range x {
+			tableData[j+1][i+1] = value.Value.String()
 		}
-
-		return tmp
-	}
-
-	tableData := [][]string{bold("Description", "Minimum", "Mean", "Median", "Maximum")}
-
-	if brs.Minimum.TotalBuildRunTime >= 0 {
-		tableData = append(tableData, cnvfnc("_total time between buildrun creation until finish_",
-			brs.Minimum.TotalBuildRunTime,
-			brs.Mean.TotalBuildRunTime,
-			brs.Median.TotalBuildRunTime,
-			brs.Maximum.TotalBuildRunTime,
-		))
-	}
-
-	if brs.Minimum.BuildRunRampUpDuration >= 0 {
-		tableData = append(tableData, cnvfnc("_time between buildrun creation and taskrun creation_",
-			brs.Minimum.BuildRunRampUpDuration,
-			brs.Mean.BuildRunRampUpDuration,
-			brs.Median.BuildRunRampUpDuration,
-			brs.Maximum.BuildRunRampUpDuration,
-		))
-	}
-
-	if brs.Minimum.TaskRunRampUpDuration >= 0 {
-		tableData = append(tableData, cnvfnc("_time between taskrun creation and tekton pod creation_",
-			brs.Minimum.TaskRunRampUpDuration,
-			brs.Mean.TaskRunRampUpDuration,
-			brs.Median.TaskRunRampUpDuration,
-			brs.Maximum.TaskRunRampUpDuration,
-		))
-	}
-
-	if brs.Minimum.PodRampUpDuration >= 0 {
-		tableData = append(tableData, cnvfnc("_time between tekton pod creation and first container start_",
-			brs.Minimum.PodRampUpDuration,
-			brs.Mean.PodRampUpDuration,
-			brs.Median.PodRampUpDuration,
-			brs.Maximum.PodRampUpDuration,
-		))
-	}
-
-	if brs.Minimum.InternalProcessingTime >= 0 {
-		tableData = append(tableData, cnvfnc("_remaining internal processing time_",
-			brs.Minimum.InternalProcessingTime,
-			brs.Mean.InternalProcessingTime,
-			brs.Median.InternalProcessingTime,
-			brs.Maximum.InternalProcessingTime,
-		))
 	}
 
 	table, err := neat.Table(tableData, neat.VertialBarSeparator())
@@ -188,22 +147,22 @@ func CreateChartJS(filename string, data []BuildRunResultSet) error {
 		labels   = []string{}
 		datasets = []dataset{
 			{
-				Label:           "InternalProcessingTime",
+				Label:           InternalProcessingTime,
 				BackgroundColor: "#6cf9a6",
 				Data:            []float64{},
 			},
 			{
-				Label:           "PodRampUpDuration",
+				Label:           PodRampUpDuration,
 				BackgroundColor: "#fdc10a",
 				Data:            []float64{},
 			},
 			{
-				Label:           "TaskRunRampUpDuration",
+				Label:           TaskRunRampUpDuration,
 				BackgroundColor: "#34a887",
 				Data:            []float64{},
 			},
 			{
-				Label:           "BuildRunRampUpDuration",
+				Label:           BuildRunRampUpDuration,
 				BackgroundColor: "#ad36a6",
 				Data:            []float64{},
 			},
@@ -213,10 +172,10 @@ func CreateChartJS(filename string, data []BuildRunResultSet) error {
 	for _, buildRunResultSet := range data {
 		labels = append(labels, fmt.Sprintf("%d", buildRunResultSet.NumberOfResults))
 
-		datasets[0].Data = append(datasets[0].Data, buildRunResultSet.Median.InternalProcessingTime.Seconds())
-		datasets[1].Data = append(datasets[1].Data, buildRunResultSet.Median.PodRampUpDuration.Seconds())
-		datasets[2].Data = append(datasets[2].Data, buildRunResultSet.Median.TaskRunRampUpDuration.Seconds())
-		datasets[3].Data = append(datasets[3].Data, buildRunResultSet.Median.BuildRunRampUpDuration.Seconds())
+		datasets[0].Data = append(datasets[0].Data, buildRunResultSet.Median.ValueOf(InternalProcessingTime).Seconds())
+		datasets[1].Data = append(datasets[1].Data, buildRunResultSet.Median.ValueOf(PodRampUpDuration).Seconds())
+		datasets[2].Data = append(datasets[2].Data, buildRunResultSet.Median.ValueOf(TaskRunRampUpDuration).Seconds())
+		datasets[3].Data = append(datasets[3].Data, buildRunResultSet.Median.ValueOf(BuildRunRampUpDuration).Seconds())
 	}
 
 	output, err := os.Create(filename)
