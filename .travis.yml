@@ -16,6 +16,7 @@ install:
 script:
 - export GO111MODULE=on
 - go build ./...
+- make test
 
 before_deploy:
 - make build

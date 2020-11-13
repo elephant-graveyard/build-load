@@ -30,6 +30,19 @@ verify:
 	@GO111MODULE=on go mod download
 	@GO111MODULE=on go mod verify
 
+.PHONY: test
+test: $(sources)
+	@GO111MODULE=on ginkgo \
+		-r \
+		-randomizeAllSpecs \
+		-randomizeSuites \
+		-failOnPending \
+		-trace \
+		-race \
+		-nodes=4 \
+		-compilers=2 \
+		-cover
+
 .PHONY: build
 build: binaries/build-load-linux-amd64 binaries/build-load-darwin-amd64
 	@/bin/sh -c "echo '\n\033[1mSHA sum of compiled binaries:\033[0m'"
