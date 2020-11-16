@@ -146,9 +146,15 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 		return nil, err
 	}
 
+	// Force clean env before starting test.
+	debug("Force clean env before starting test")
+
+	var graceperiod int64 = int64(0)
+	deleteOptions := metav1.DeleteOptions{GracePeriodSeconds: &graceperiod}
+
 	defer func() {
 		debug("Delete build %s", build.Name)
-		if err := kubeAccess.BuildClient.BuildV1alpha1().Builds(build.Namespace).Delete(build.Name, &metav1.DeleteOptions{}); err != nil {
+		if err := kubeAccess.BuildClient.BuildV1alpha1().Builds(build.Namespace).Delete(build.Name, &deleteOptions); err != nil {
 			warn("failed to delete build %s, %v\n", name, err)
 		}
 	}()
@@ -160,7 +166,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 
 	defer func() {
 		debug("Delete buildrun %s", buildRun.Name)
-		if err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(buildRun.Namespace).Delete(buildRun.Name, &metav1.DeleteOptions{}); err != nil {
+		if err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(buildRun.Namespace).Delete(buildRun.Name, &deleteOptions); err != nil {
 			warn("failed to delete buildrun %s, %v\n", name, err)
 		}
 	}()
