@@ -13,7 +13,7 @@ Create synthetic load for [shipwright-io/build](https://github.com/shipwright-io
 ```sh
 build-load \
   buildruns \
-  --namespace test-namespace \
+  --namespace=test-namespace \
   --cluster-build-strategy=kaniko \
   --source-url=https://github.com/EmilyEmily/docker-simple \
   --output-image-url=docker.io/boatyard \
@@ -25,7 +25,7 @@ build-load \
 ```sh
 build-load \
   buildruns \
-  --namespace test-namespace \
+  --namespace=test-namespace \
   --cluster-build-strategy=buildpacks-v3 \
   --source-url=https://github.com/sclorg/nodejs-ex \
   --output-image-url=docker.io/boatyard \
