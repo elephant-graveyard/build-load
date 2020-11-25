@@ -30,7 +30,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gonvenience/wrap"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"knative.dev/pkg/ptr"
 )
 
 var (
@@ -78,6 +80,10 @@ func newBuildRun(name string, build buildv1alpha1.Build, generateServiceAccount 
 }
 
 func applyBuild(kubeAccess KubeAccess, build buildv1alpha1.Build) (*buildv1alpha1.Build, error) {
+	if err := deleteBuild(kubeAccess, build.Namespace, build.Name, &metav1.DeleteOptions{GracePeriodSeconds: ptr.Int64(0)}); err != nil {
+		return nil, err
+	}
+
 	debug("Create build %s", build.Name)
 	return kubeAccess.BuildClient.
 		BuildV1alpha1().
@@ -86,11 +92,60 @@ func applyBuild(kubeAccess KubeAccess, build buildv1alpha1.Build) (*buildv1alpha
 }
 
 func applyBuildRun(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) (*buildv1alpha1.BuildRun, error) {
+	if err := deleteBuildRun(kubeAccess, buildRun.Namespace, buildRun.Name, &metav1.DeleteOptions{GracePeriodSeconds: ptr.Int64(0)}); err != nil {
+		return nil, err
+	}
+
 	debug("Create buildrun %s", buildRun.Name)
 	return kubeAccess.BuildClient.
 		BuildV1alpha1().
 		BuildRuns(buildRun.Namespace).
 		Create(&buildRun)
+}
+
+func deleteBuild(kubeAccess KubeAccess, namespace string, name string, deleteOptions *metav1.DeleteOptions) error {
+	_, err := kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Get(name, metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		return nil
+	}
+
+	debug("Delete build %s", name)
+	if err := kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Delete(name, deleteOptions); err != nil {
+		return err
+	}
+
+	return wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
+		_, err = kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Get(name, metav1.GetOptions{})
+		return errors.IsNotFound(err), nil
+	})
+}
+
+func deleteBuildRun(kubeAccess KubeAccess, namespace string, name string, deleteOptions *metav1.DeleteOptions) error {
+	buildRun, err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(name, metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		return nil
+	}
+
+	_, pod := lookUpTaskRunAndPod(kubeAccess, *buildRun)
+
+	debug("Delete buildrun %s", name)
+	if err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Delete(name, deleteOptions); err != nil {
+		return err
+	}
+
+	err = wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
+		_, err = kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(name, metav1.GetOptions{})
+		return errors.IsNotFound(err), nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
+		_, err = kubeAccess.Client.CoreV1().Pods(namespace).Get(pod.Name, metav1.GetOptions{})
+		return errors.IsNotFound(err), nil
+	})
 }
 
 func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.BuildRun) (*buildv1alpha1.BuildRun, error) {
