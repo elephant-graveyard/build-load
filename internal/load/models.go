@@ -72,6 +72,7 @@ type BuildConfig struct {
 	OutputImageURL         string
 	OutputSecretRef        string
 	Timeout                time.Duration
+	SkipDelete             bool
 }
 
 // BuildRunResultSet is an aggregated result set based on multiple

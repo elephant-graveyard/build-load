@@ -33,6 +33,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+type buildRunOptions struct {
+	generateServiceAccount bool
+	skipDelete             bool
+}
+
+// BuildRunOption specifies optional settings for a buildrun
+type BuildRunOption func(*buildRunOptions)
+
 // CheckSystemAndConfig sanity checks the cluster using the provided buildrun
 // settings to verify whether a buildrun can work and how much pressure it
 // would put onto the system
@@ -139,8 +147,27 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 	return nil
 }
 
+// GenerateServiceAccount sets whether or not a service account is created for the buildrun
+func GenerateServiceAccount(value bool) BuildRunOption {
+	return func(o *buildRunOptions) {
+		o.generateServiceAccount = value
+	}
+}
+
+// SkipDelete sets whether or not the resources like build, buildrun and output image should be cleaned up
+func SkipDelete(value bool) BuildRunOption {
+	return func(o *buildRunOptions) {
+		o.skipDelete = value
+	}
+}
+
 // ExecuteSingleBuildRun executes a single buildrun based on the given settings
-func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string, generateServiceAccount bool, buildSpec buildv1alpha1.BuildSpec) (*BuildRunResult, error) {
+func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string, buildSpec buildv1alpha1.BuildSpec, options ...BuildRunOption) (*BuildRunResult, error) {
+	var buildRunOptions = buildRunOptions{}
+	for _, option := range options {
+		option(&buildRunOptions)
+	}
+
 	build, err := applyBuild(kubeAccess, newBuild(namespace, name, buildSpec))
 	if err != nil {
 		return nil, err
@@ -152,36 +179,42 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 	var graceperiod int64 = int64(0)
 	deleteOptions := metav1.DeleteOptions{GracePeriodSeconds: &graceperiod}
 
-	defer func() {
-		debug("Delete build %s", build.Name)
-		if err := kubeAccess.BuildClient.BuildV1alpha1().Builds(build.Namespace).Delete(build.Name, &deleteOptions); err != nil {
-			warn("failed to delete build %s, %v\n", name, err)
-		}
-	}()
+	if !buildRunOptions.skipDelete {
+		defer func() {
+			debug("Delete build %s", build.Name)
+			if err := kubeAccess.BuildClient.BuildV1alpha1().Builds(build.Namespace).Delete(build.Name, &deleteOptions); err != nil {
+				warn("failed to delete build %s, %v\n", name, err)
+			}
+		}()
+	}
 
-	buildRun, err := applyBuildRun(kubeAccess, newBuildRun(name, *build, generateServiceAccount))
+	buildRun, err := applyBuildRun(kubeAccess, newBuildRun(name, *build, buildRunOptions.generateServiceAccount))
 	if err != nil {
 		return nil, err
 	}
 
-	defer func() {
-		debug("Delete buildrun %s", buildRun.Name)
-		if err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(buildRun.Namespace).Delete(buildRun.Name, &deleteOptions); err != nil {
-			warn("failed to delete buildrun %s, %v\n", name, err)
-		}
-	}()
+	if !buildRunOptions.skipDelete {
+		defer func() {
+			debug("Delete buildrun %s", buildRun.Name)
+			if err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(buildRun.Namespace).Delete(buildRun.Name, &deleteOptions); err != nil {
+				warn("failed to delete buildrun %s, %v\n", name, err)
+			}
+		}()
+	}
 
 	buildRun, err = waitForBuildRunCompletion(kubeAccess, buildRun)
 	if err != nil {
 		return nil, err
 	}
 
-	defer func() {
-		debug("Delete container image %s", buildRun.Status.BuildSpec.Output.ImageURL)
-		if err := deleteContainerImage(kubeAccess, buildRun.Namespace, build.Spec.Output.SecretRef, buildRun.Status.BuildSpec.Output.ImageURL); err != nil {
-			warn("failed to delete image %s, %v\n", buildRun.Status.BuildSpec.Output.ImageURL, err)
-		}
-	}()
+	if !buildRunOptions.skipDelete {
+		defer func() {
+			debug("Delete container image %s", buildRun.Status.BuildSpec.Output.ImageURL)
+			if err := deleteContainerImage(kubeAccess, buildRun.Namespace, build.Spec.Output.SecretRef, buildRun.Status.BuildSpec.Output.ImageURL); err != nil {
+				warn("failed to delete image %s, %v\n", buildRun.Status.BuildSpec.Output.ImageURL, err)
+			}
+		}()
+	}
 
 	totalBuildRunTime := buildRun.Status.CompletionTime.Time.Sub(buildRun.ObjectMeta.CreationTimestamp.Time)
 	buildRunRampUpDuration := time.Duration(-1)
@@ -249,7 +282,15 @@ func ExecuteParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, bui
 				return
 			}
 
-			result, err := ExecuteSingleBuildRun(kubeAccess, namespace, name, buildCfg.GenerateServiceAccount, *buildSpec)
+			result, err := ExecuteSingleBuildRun(
+				kubeAccess,
+				namespace,
+				name,
+				*buildSpec,
+				GenerateServiceAccount(buildCfg.GenerateServiceAccount),
+				SkipDelete(buildCfg.SkipDelete),
+			)
+
 			if err != nil {
 				errors <- err
 				return
@@ -307,7 +348,7 @@ func ExecuteTestPlan(kubeAccess KubeAccess, testplan TestPlan) error {
 
 		step.BuildSpec.Output.ImageURL = outputImageURL
 
-		if _, err := ExecuteSingleBuildRun(kubeAccess, testplan.Namespace, name, testplan.GenerateServiceAccount, step.BuildSpec); err != nil {
+		if _, err := ExecuteSingleBuildRun(kubeAccess, testplan.Namespace, name, step.BuildSpec, GenerateServiceAccount(testplan.GenerateServiceAccount)); err != nil {
 			return err
 		}
 	}

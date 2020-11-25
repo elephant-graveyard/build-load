@@ -77,6 +77,8 @@ func applyBuildRunSettingsFlags(cmd *cobra.Command, buildCfg *load.BuildConfig) 
 
 	pf.DurationVar(&buildCfg.Timeout, "timeout", time.Duration(0), "defines the maximum runtime of a build run")
 
+	pf.BoolVar(&buildCfg.SkipDelete, "skip-delete", false, "skip the clean-up of resources, which means no deletion of build, buildrun, and output image")
+
 	cobra.MarkFlagRequired(pf, "source-url")
 	cobra.MarkFlagRequired(pf, "output-image-url")
 }
