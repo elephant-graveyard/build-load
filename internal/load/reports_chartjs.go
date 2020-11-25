@@ -20,50 +20,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
-
-	"github.com/gonvenience/bunt"
-	"github.com/gonvenience/neat"
-	"github.com/gonvenience/text"
 )
-
-func (brs BuildRunResultSet) String() string {
-	bold := func(args ...string) []string {
-		var tmp = make([]string, len(args))
-		for i, str := range args {
-			tmp[i] = bunt.Sprintf("*%s*", str)
-		}
-
-		return tmp
-	}
-
-	headline := bold("Description", "Minimum", "Mean", "Median", "Maximum")
-	tableData := [][]string{headline}
-
-	for _, entry := range brs.Minimum {
-		line := make([]string, len(headline))
-		line[0] = entry.Description
-
-		tableData = append(tableData, line)
-	}
-
-	for i, x := range []BuildRunResult{brs.Minimum, brs.Mean, brs.Median, brs.Maximum} {
-		for j, value := range x {
-			tableData[j+1][i+1] = value.Value.String()
-		}
-	}
-
-	table, err := neat.Table(tableData, neat.AlignCenter(1, 2, 3, 4), neat.CustomSeparator(bunt.Sprintf(" DimGray{│} ")))
-	if err != nil {
-		panic(err)
-	}
-
-	return neat.ContentBox(
-		bunt.Sprintf("Results based on %s", text.Plural(brs.NumberOfResults, "parallel buildrun")),
-		table,
-		neat.HeadlineColor(bunt.Beige),
-		neat.NoLineWrap(),
-	)
-}
 
 // CreateChartJS creates a page with ChartsJS to render the provided results
 func CreateChartJS(filename string, data []BuildRunResultSet) error {
