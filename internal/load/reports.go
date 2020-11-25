@@ -52,7 +52,7 @@ func (brs BuildRunResultSet) String() string {
 		}
 	}
 
-	table, err := neat.Table(tableData, neat.VertialBarSeparator())
+	table, err := neat.Table(tableData, neat.AlignCenter(1, 2, 3, 4), neat.CustomSeparator(bunt.Sprintf(" DimGray{│} ")))
 	if err != nil {
 		panic(err)
 	}
