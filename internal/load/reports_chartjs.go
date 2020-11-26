@@ -19,11 +19,11 @@ package load
 import (
 	"fmt"
 	"html/template"
-	"os"
+	"io"
 )
 
 // CreateChartJS creates a page with ChartsJS to render the provided results
-func CreateChartJS(filename string, data []BuildRunResultSet) error {
+func CreateChartJS(data []BuildRunResultSet, w io.Writer) error {
 	const reportTemplate = `<!DOCTYPE html>
 	<html>
 
@@ -135,17 +135,12 @@ func CreateChartJS(filename string, data []BuildRunResultSet) error {
 		datasets[3].Data = append(datasets[3].Data, buildRunResultSet.Median.ValueOf(BuildRunRampUpDuration).Seconds())
 	}
 
-	output, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-
 	type inputs struct {
 		Labels   []string
 		Datasets []dataset
 	}
 
-	return tmpl.Execute(output, inputs{
+	return tmpl.Execute(w, inputs{
 		Labels:   labels,
 		Datasets: datasets,
 	})
