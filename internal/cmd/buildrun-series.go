@@ -17,6 +17,11 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
+	"io"
+	"io/ioutil"
+	"os"
+
 	"github.com/gonvenience/bunt"
 	"github.com/homeport/build-load/internal/load"
 	"github.com/spf13/cobra"
@@ -28,6 +33,9 @@ var buildRunSeriesCmdSettings struct {
 	buildTestsIncrement int
 	namingCfg           load.NamingConfig
 	buildCfg            load.BuildConfig
+
+	htmlOutput string
+	csvOutput  string
 }
 
 var buildRunSeriesCmd = &cobra.Command{
@@ -51,7 +59,25 @@ var buildRunSeriesCmd = &cobra.Command{
 			return err
 		}
 
-		return load.CreateChartJS("report.html", results)
+		var store = func(filename string, f func(w io.Writer) error) error {
+			var buf bytes.Buffer
+			f(&buf)
+			return ioutil.WriteFile(filename, buf.Bytes(), os.FileMode(0644))
+		}
+
+		if len(buildRunSeriesCmdSettings.htmlOutput) > 0 {
+			store(buildRunSeriesCmdSettings.htmlOutput, func(w io.Writer) error {
+				return load.CreateChartJS(results, w)
+			})
+		}
+
+		if len(buildRunSeriesCmdSettings.csvOutput) > 0 {
+			store(buildRunSeriesCmdSettings.csvOutput, func(w io.Writer) error {
+				return load.CreateBuildRunResultSetCSV(results, w)
+			})
+		}
+
+		return nil
 	},
 }
 
@@ -64,6 +90,9 @@ func init() {
 	buildRunSeriesCmd.Flags().IntVar(&buildRunSeriesCmdSettings.buildTestsMin, "build-tests-min", 5, "lowest number of parallel builds to test")
 	buildRunSeriesCmd.Flags().IntVar(&buildRunSeriesCmdSettings.buildTestsMax, "build-tests-max", 100, "highest number of parallel builds to test")
 	buildRunSeriesCmd.Flags().IntVar(&buildRunSeriesCmdSettings.buildTestsIncrement, "build-tests-increment", 5, "increment for spinning up the number of parallel tests")
+
+	buildRunSeriesCmd.Flags().StringVar(&buildRunSeriesCmdSettings.htmlOutput, "html", "", "filename of the HTML report")
+	buildRunSeriesCmd.Flags().StringVar(&buildRunSeriesCmdSettings.csvOutput, "csv", "", "filename of the CSV report")
 
 	applyNamingFlags(buildRunSeriesCmd, &buildRunSeriesCmdSettings.namingCfg)
 	applyBuildRunSettingsFlags(buildRunSeriesCmd, &buildRunSeriesCmdSettings.buildCfg)
