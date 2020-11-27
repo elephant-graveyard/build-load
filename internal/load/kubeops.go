@@ -142,10 +142,14 @@ func deleteBuildRun(kubeAccess KubeAccess, namespace string, name string, delete
 		return err
 	}
 
-	return wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
-		_, err = kubeAccess.Client.CoreV1().Pods(namespace).Get(pod.Name, metav1.GetOptions{})
-		return errors.IsNotFound(err), nil
-	})
+	if pod != nil {
+		err = wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
+			_, err = kubeAccess.Client.CoreV1().Pods(namespace).Get(pod.Name, metav1.GetOptions{})
+			return errors.IsNotFound(err), nil
+		})
+	}
+
+	return err
 }
 
 func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.BuildRun) (*buildv1alpha1.BuildRun, error) {
