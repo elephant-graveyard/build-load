@@ -23,6 +23,14 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+const (
+	MockLabel1 = "mock #1"
+	MockLabel2 = "mock #2"
+	MockLabel3 = "mock #3"
+	MockLabel4 = "mock #4"
+	MockLabel5 = "mock #5"
+)
+
 func TestLoad(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "pkg/load")

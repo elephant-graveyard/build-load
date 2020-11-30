@@ -211,41 +211,52 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 		}()
 	}
 
-	totalBuildRunTime := buildRun.Status.CompletionTime.Time.Sub(buildRun.ObjectMeta.CreationTimestamp.Time)
-	buildRunRampUpDuration := time.Duration(-1)
-	taskRunRampUpDuration := time.Duration(-1)
-	podRampUpDuration := time.Duration(-1)
-	internalProcessingTime := time.Duration(-1)
+	var buildRunResult = BuildRunResult{
+		Value{
+			BuildrunCompletionTime,
+			duration(buildRun.CreationTimestamp.Time, buildRun.Status.CompletionTime.Time),
+		},
+	}
 
 	taskRun, pod := lookUpTaskRunAndPod(kubeAccess, *buildRun)
 	if pod != nil {
-		var lastInitPodIdx = len(pod.Status.InitContainerStatuses) - 1
-		var lastInitPod = pod.Status.InitContainerStatuses[lastInitPodIdx]
-		podRampUpDuration = lastInitPod.State.Terminated.FinishedAt.Sub(pod.CreationTimestamp.Time)
-
 		if taskRun != nil {
-			var totalTektonStepsTime time.Duration
-			for _, step := range taskRun.Status.Steps {
-				totalTektonStepsTime += step.Terminated.FinishedAt.Time.Sub(step.Terminated.StartedAt.Time)
-			}
+			buildRunResult = append(buildRunResult,
+				Value{
+					BuildrunControlTime,
+					duration(buildRun.Status.StartTime.Time, taskRun.Status.StartTime.Time),
+				},
+			)
 
-			buildRunRampUpDuration = taskRun.CreationTimestamp.Time.Sub(buildRun.CreationTimestamp.Time)
-			taskRunRampUpDuration = pod.CreationTimestamp.Time.Sub(taskRun.CreationTimestamp.Time)
+			buildRunResult = append(buildRunResult,
+				Value{
+					TaskrunCompletionTime,
+					duration(taskRun.Status.StartTime.Time, taskRun.Status.CompletionTime.Time),
+				},
+			)
 
-			internalProcessingTime = totalBuildRunTime -
-				buildRunRampUpDuration -
-				taskRunRampUpDuration -
-				podRampUpDuration -
-				totalTektonStepsTime
+			buildRunResult = append(buildRunResult,
+				Value{
+					TaskrunControlTime,
+					duration(taskRun.Status.StartTime.Time, pod.Status.StartTime.Time),
+				},
+			)
 		}
-	}
 
-	buildRunResult := &BuildRunResult{
-		Value{TotalBuildRunTime, totalBuildRunTime},
-		Value{BuildRunRampUpDuration, buildRunRampUpDuration},
-		Value{TaskRunRampUpDuration, taskRunRampUpDuration},
-		Value{PodRampUpDuration, podRampUpDuration},
-		Value{InternalProcessingTime, internalProcessingTime},
+		var lastContainerIdx = len(pod.Status.ContainerStatuses) - 1
+		buildRunResult = append(buildRunResult,
+			Value{
+				PodCompletionTime,
+				duration(pod.Status.StartTime.Time, pod.Status.ContainerStatuses[lastContainerIdx].State.Terminated.FinishedAt.Time),
+			},
+		)
+
+		buildRunResult = append(buildRunResult,
+			Value{
+				PodControlTime,
+				duration(buildRun.Status.StartTime.Time, pod.Status.StartTime.Time),
+			},
+		)
 	}
 
 	debug("buildrun _%s/%s_ results: %v",
@@ -254,7 +265,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 		buildRunResult,
 	)
 
-	return buildRunResult, nil
+	return &buildRunResult, nil
 }
 
 // ExecuteParallelBuildRuns executes the same buildrun multiple times in
@@ -381,4 +392,13 @@ func estimateResourceRequests(clusterBuildStrategy buildv1alpha1.ClusterBuildStr
 			resource.BinarySI,
 		),
 	}
+}
+
+func duration(start, end time.Time) time.Duration {
+	if start.After(end) {
+		warn("start time %v is after end time %v, return 0 as the duration", start, end)
+		return time.Duration(0)
+	}
+
+	return end.Sub(start)
 }

@@ -62,7 +62,6 @@ func CreateChartJS(data []BuildRunResultSet, w io.Writer) error {
 	                        display: true,
 	                        labelString: 'number of parallel builds'
 	                    },
-	                    stacked: true,
 	                    gridLines: {
 	                        display: false,
 	                    }
@@ -72,7 +71,6 @@ func CreateChartJS(data []BuildRunResultSet, w io.Writer) error {
 	                        display: true,
 	                        labelString: 'time in seconds'
 	                    },
-	                    stacked: true,
 	                    ticks: {
 	                        beginAtZero: true,
 	                    },
@@ -104,23 +102,33 @@ func CreateChartJS(data []BuildRunResultSet, w io.Writer) error {
 		labels   = []string{}
 		datasets = []dataset{
 			{
-				Label:           InternalProcessingTime,
+				Label:           BuildrunCompletionTime,
 				BackgroundColor: "#6cf9a6",
 				Data:            []float64{},
 			},
 			{
-				Label:           PodRampUpDuration,
+				Label:           BuildrunControlTime,
 				BackgroundColor: "#fdc10a",
 				Data:            []float64{},
 			},
 			{
-				Label:           TaskRunRampUpDuration,
+				Label:           TaskrunCompletionTime,
 				BackgroundColor: "#34a887",
 				Data:            []float64{},
 			},
 			{
-				Label:           BuildRunRampUpDuration,
+				Label:           TaskrunControlTime,
 				BackgroundColor: "#ad36a6",
+				Data:            []float64{},
+			},
+			{
+				Label:           PodCompletionTime,
+				BackgroundColor: "#a064a6",
+				Data:            []float64{},
+			},
+			{
+				Label:           PodControlTime,
+				BackgroundColor: "#ada469",
 				Data:            []float64{},
 			},
 		}
@@ -129,10 +137,12 @@ func CreateChartJS(data []BuildRunResultSet, w io.Writer) error {
 	for _, buildRunResultSet := range data {
 		labels = append(labels, fmt.Sprintf("%d", buildRunResultSet.NumberOfResults))
 
-		datasets[0].Data = append(datasets[0].Data, buildRunResultSet.Median.ValueOf(InternalProcessingTime).Seconds())
-		datasets[1].Data = append(datasets[1].Data, buildRunResultSet.Median.ValueOf(PodRampUpDuration).Seconds())
-		datasets[2].Data = append(datasets[2].Data, buildRunResultSet.Median.ValueOf(TaskRunRampUpDuration).Seconds())
-		datasets[3].Data = append(datasets[3].Data, buildRunResultSet.Median.ValueOf(BuildRunRampUpDuration).Seconds())
+		datasets[0].Data = append(datasets[0].Data, buildRunResultSet.Median.ValueOf(BuildrunCompletionTime).Seconds())
+		datasets[1].Data = append(datasets[1].Data, buildRunResultSet.Median.ValueOf(BuildrunControlTime).Seconds())
+		datasets[2].Data = append(datasets[2].Data, buildRunResultSet.Median.ValueOf(TaskrunCompletionTime).Seconds())
+		datasets[3].Data = append(datasets[3].Data, buildRunResultSet.Median.ValueOf(TaskrunControlTime).Seconds())
+		datasets[4].Data = append(datasets[4].Data, buildRunResultSet.Median.ValueOf(PodCompletionTime).Seconds())
+		datasets[5].Data = append(datasets[5].Data, buildRunResultSet.Median.ValueOf(PodControlTime).Seconds())
 	}
 
 	type inputs struct {

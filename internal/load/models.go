@@ -39,11 +39,12 @@ import (
 
 // Naming constants for the buildrun results
 const (
-	TotalBuildRunTime      = "total time between buildrun creation until finish"
-	BuildRunRampUpDuration = "time between buildrun creation and taskrun creation"
-	TaskRunRampUpDuration  = "time between taskrun creation and tekton pod creation"
-	PodRampUpDuration      = "time between tekton pod creation and first container start"
-	InternalProcessingTime = "remaining internal processing time"
+	BuildrunCompletionTime = "BuildRun completion time"
+	BuildrunControlTime    = "BuildRun control time"
+	TaskrunCompletionTime  = "TaskRun completion time"
+	TaskrunControlTime     = "TaskRun control time"
+	PodCompletionTime      = "Pod completion time"
+	PodControlTime         = "Pod control time"
 )
 
 // KubeAccess contains Kubernetes cluster access objects in a single place
@@ -106,17 +107,12 @@ type TestPlan struct {
 }
 
 func (brr BuildRunResult) String() string {
-	var duration = func(d time.Duration) string {
-		if d >= time.Duration(0) {
-			return d.String()
-		}
-
-		return bunt.Sprintf("DarkGray{_(no data)_}")
-	}
-
 	var tmp = []string{}
 	for _, value := range brr {
-		tmp = append(tmp, bunt.Sprintf("_%s_=%v", value.Description, duration(value.Value)))
+		tmp = append(tmp, bunt.Sprintf("_%s_=%v",
+			value.Description,
+			value.Value.String(),
+		))
 	}
 
 	return strings.Join(tmp, ", ")
@@ -130,7 +126,7 @@ func (brr BuildRunResult) ValueOf(description string) time.Duration {
 		}
 	}
 
-	return time.Duration(-1)
+	return time.Duration(0)
 }
 
 // NewTestPlan creates a test plan based on the provided input
