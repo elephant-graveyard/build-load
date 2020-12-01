@@ -317,7 +317,7 @@ func ExecuteParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, bui
 func ExecuteSeriesOfParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, buildCfg BuildConfig, start int, end int, increment int) ([]BuildRunResultSet, error) {
 	var results = []BuildRunResultSet{}
 
-	for parallelBuilds := start; parallelBuilds <= end; parallelBuilds += increment {
+	for parallelBuilds := start; parallelBuilds < end; parallelBuilds += increment {
 		buildRunResults, err := ExecuteParallelBuildRuns(kubeAccess, namingCfg, buildCfg, parallelBuilds)
 		if err != nil {
 			return nil, err
