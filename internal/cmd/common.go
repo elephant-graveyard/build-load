@@ -17,6 +17,10 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
+	"io"
+	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/gonvenience/bunt"
@@ -81,4 +85,14 @@ func applyBuildRunSettingsFlags(cmd *cobra.Command, buildCfg *load.BuildConfig) 
 
 	cobra.MarkFlagRequired(pf, "source-url")
 	cobra.MarkFlagRequired(pf, "output-image-url")
+}
+
+func store(filename string, f func(w io.Writer) error) error {
+	if len(filename) == 0 {
+		return nil
+	}
+
+	var buf bytes.Buffer
+	f(&buf)
+	return ioutil.WriteFile(filename, buf.Bytes(), os.FileMode(0644))
 }

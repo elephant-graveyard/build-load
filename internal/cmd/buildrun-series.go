@@ -17,11 +17,8 @@ limitations under the License.
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"os"
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wrap"
@@ -76,23 +73,13 @@ var buildRunSeriesCmd = &cobra.Command{
 			return err
 		}
 
-		var store = func(filename string, f func(w io.Writer) error) error {
-			var buf bytes.Buffer
-			f(&buf)
-			return ioutil.WriteFile(filename, buf.Bytes(), os.FileMode(0644))
-		}
+		store(buildRunSeriesCmdSettings.htmlOutput, func(w io.Writer) error {
+			return load.CreateChartJS(results, w)
+		})
 
-		if len(buildRunSeriesCmdSettings.htmlOutput) > 0 {
-			store(buildRunSeriesCmdSettings.htmlOutput, func(w io.Writer) error {
-				return load.CreateChartJS(results, w)
-			})
-		}
-
-		if len(buildRunSeriesCmdSettings.csvOutput) > 0 {
-			store(buildRunSeriesCmdSettings.csvOutput, func(w io.Writer) error {
-				return load.CreateBuildRunResultSetCSV(results, w)
-			})
-		}
+		store(buildRunSeriesCmdSettings.csvOutput, func(w io.Writer) error {
+			return load.CreateBuildRunResultSetCSV(results, w)
+		})
 
 		return nil
 	},

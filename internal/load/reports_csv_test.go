@@ -42,6 +42,24 @@ var _ = Describe("create CSV reports", func() {
 		return result
 	}
 
+	Context("having a list of buildrun results", func() {
+		It("should create a CSV file based on the content in the buildrun results", func() {
+			var buildrunResults = mockBuildRunResults(5)
+
+			var buf bytes.Buffer
+			err := CreateBuildRunResultsCSV(buildrunResults, &buf)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(buf.String()).To(Equal(`buildrun, mock #1, mock #2, mock #3, mock #4, mock #5
+1       , 1000   , 10000  , 100000 , 1000000, 10000000
+2       , 2000   , 20000  , 200000 , 2000000, 20000000
+3       , 3000   , 30000  , 300000 , 3000000, 30000000
+4       , 4000   , 40000  , 400000 , 4000000, 40000000
+5       , 5000   , 50000  , 500000 , 5000000, 50000000
+`))
+		})
+	})
+
 	Context("having a buildrun result set", func() {
 		It("should create a CSV file based on the content in the buildrun result set", func() {
 			var buildRunResultSets = []BuildRunResultSet{

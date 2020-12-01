@@ -24,6 +24,37 @@ import (
 	"github.com/gonvenience/neat"
 )
 
+// CreateBuildRunResultsCSV creates a comma separated values (CSV) content based on the buildruns
+func CreateBuildRunResultsCSV(data []BuildRunResult, w io.Writer) error {
+	var table = [][]string{}
+	for i, buildRunResult := range data {
+		// add header based on first entry
+		if i == 0 {
+			var row = []string{"buildrun"}
+			for _, value := range buildRunResult {
+				row = append(row, value.Description)
+			}
+
+			table = append(table, row)
+		}
+
+		var row = []string{strconv.Itoa(i + 1)}
+		for _, value := range buildRunResult {
+			row = append(row, strconv.Itoa(int(value.Value.Milliseconds())))
+		}
+
+		table = append(table, row)
+	}
+
+	out, err := neat.Table(table, neat.CustomSeparator(", "))
+	if err != nil {
+		return err
+	}
+
+	_, err = fmt.Fprint(w, out)
+	return err
+}
+
 // CreateBuildRunResultSetCSV creates a comma separated values (CSV) content based on the buildrun result sets
 func CreateBuildRunResultSetCSV(data []BuildRunResultSet, w io.Writer) error {
 	var table = [][]string{}

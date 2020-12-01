@@ -20,119 +20,157 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"strconv"
 )
 
-// CreateChartJS creates a page with ChartsJS to render the provided results
-func CreateChartJS(data []BuildRunResultSet, w io.Writer) error {
-	const reportTemplate = `<!DOCTYPE html>
-	<html>
+const reportTemplate = `<!DOCTYPE html>
+<html>
 
-	<head>
-	    <meta charset="utf-8">
-	    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
-	</head>
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+</head>
 
-	<body>
-	    <div class="chart-container" style="position: relative; width:90vw;">
-	        <canvas id="myChart"></canvas>
-	    </div>
+<body>
+  <div class="chart-container" style="position: relative; width:90vw;">
+    <canvas id="myChart"></canvas>
+  </div>
 
-	<script>
-	    var ctx = document.getElementById('myChart').getContext('2d');
-	    var myChart = new Chart(ctx, {
-	        type: 'bar',
-	        data: {
-	            labels: {{ .Labels }},
-	            datasets: {{ .Datasets }},
-	        },
-	        options: {
-	            title: {
-	                display: true,
-	                text: 'Build run times with different numbers of parallel builds'
-	            },
-	            tooltips: {
-	                displayColors: true,
-	                callbacks: {
-	                    mode: 'x',
-	                },
-	            },
-	            scales: {
-	                xAxes: [{
-	                    scaleLabel: {
-	                        display: true,
-	                        labelString: 'number of parallel builds'
-	                    },
-	                    gridLines: {
-	                        display: false,
-	                    }
-	                }],
-	                yAxes: [{
-	                    scaleLabel: {
-	                        display: true,
-	                        labelString: 'time in seconds'
-	                    },
-	                    ticks: {
-	                        beginAtZero: true,
-	                    },
-	                    type: 'linear',
-	                }]
-	            },
-	            responsive: true,
-	            maintainAspectRatio: true,
-	            legend: { position: 'bottom' },
-	        }
-	    });
-	</script>
-	</body>
-	</html>
-	`
+<script>
+  var ctx = document.getElementById('myChart').getContext('2d');
+  var myChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ .Labels }},
+      datasets: {{ .Datasets }},
+    },
+    options: {
+      title: {
+        display: true,
+        text: {{ .Text }}
+      },
+      tooltips: {
+        displayColors: true,
+        callbacks: {
+          mode: 'x',
+        },
+      },
+      scales: {
+        xAxes: [{
+          scaleLabel: {
+            display: true,
+            labelString: {{ .LabelX }}
+          },
+          gridLines: {
+            display: false,
+          }
+        }],
+        yAxes: [{
+          scaleLabel: {
+            display: true,
+            labelString: {{ .LabelY }}
+          },
+          ticks: {
+            beginAtZero: true,
+          },
+          type: 'linear',
+        }]
+      },
+      responsive: true,
+      maintainAspectRatio: true,
+      legend: { position: 'bottom' },
+    }
+  });
+</script>
+</body>
+</html>
+`
 
+type dataset struct {
+	Label           string    `json:"label"`
+	BackgroundColor string    `json:"backgroundColor"`
+	Data            []float64 `json:"data"`
+}
+
+type inputs struct {
+	Text     string
+	LabelX   string
+	LabelY   string
+	Labels   []string
+	Datasets []dataset
+}
+
+func prepareDatasets() []dataset {
+	return []dataset{
+		{
+			Label:           BuildrunCompletionTime,
+			BackgroundColor: "#6cf9a6",
+			Data:            []float64{},
+		},
+		{
+			Label:           BuildrunControlTime,
+			BackgroundColor: "#fdc10a",
+			Data:            []float64{},
+		},
+		{
+			Label:           TaskrunCompletionTime,
+			BackgroundColor: "#34a887",
+			Data:            []float64{},
+		},
+		{
+			Label:           TaskrunControlTime,
+			BackgroundColor: "#ad36a6",
+			Data:            []float64{},
+		},
+		{
+			Label:           PodCompletionTime,
+			BackgroundColor: "#a064a6",
+			Data:            []float64{},
+		},
+		{
+			Label:           PodControlTime,
+			BackgroundColor: "#ada469",
+			Data:            []float64{},
+		},
+	}
+}
+
+// CreateBuildrunResultsChartJS creates a page with ChartJS to display the results of buildruns
+func CreateBuildrunResultsChartJS(data []BuildRunResult, w io.Writer) error {
 	tmpl, err := template.New("report").Parse(reportTemplate)
 	if err != nil {
 		return err
 	}
 
-	type dataset struct {
-		Label           string    `json:"label"`
-		BackgroundColor string    `json:"backgroundColor"`
-		Data            []float64 `json:"data"`
+	var labels = []string{}
+	var datasets = prepareDatasets()
+
+	for i, buildRunResult := range data {
+		labels = append(labels, strconv.Itoa(i+1))
+
+		for j, value := range buildRunResult {
+			datasets[j].Data = append(datasets[j].Data, value.Value.Seconds())
+		}
 	}
 
-	var (
-		labels   = []string{}
-		datasets = []dataset{
-			{
-				Label:           BuildrunCompletionTime,
-				BackgroundColor: "#6cf9a6",
-				Data:            []float64{},
-			},
-			{
-				Label:           BuildrunControlTime,
-				BackgroundColor: "#fdc10a",
-				Data:            []float64{},
-			},
-			{
-				Label:           TaskrunCompletionTime,
-				BackgroundColor: "#34a887",
-				Data:            []float64{},
-			},
-			{
-				Label:           TaskrunControlTime,
-				BackgroundColor: "#ad36a6",
-				Data:            []float64{},
-			},
-			{
-				Label:           PodCompletionTime,
-				BackgroundColor: "#a064a6",
-				Data:            []float64{},
-			},
-			{
-				Label:           PodControlTime,
-				BackgroundColor: "#ada469",
-				Data:            []float64{},
-			},
-		}
-	)
+	return tmpl.Execute(w, inputs{
+		Text:     "BuildRun times",
+		LabelX:   "buildrun",
+		LabelY:   "time in seconds",
+		Labels:   labels,
+		Datasets: datasets,
+	})
+}
+
+// CreateChartJS creates a page with ChartsJS to render the provided results
+func CreateChartJS(data []BuildRunResultSet, w io.Writer) error {
+	tmpl, err := template.New("report").Parse(reportTemplate)
+	if err != nil {
+		return err
+	}
+
+	var labels = []string{}
+	var datasets = prepareDatasets()
 
 	for _, buildRunResultSet := range data {
 		labels = append(labels, fmt.Sprintf("%d", buildRunResultSet.NumberOfResults))
@@ -145,12 +183,10 @@ func CreateChartJS(data []BuildRunResultSet, w io.Writer) error {
 		datasets[5].Data = append(datasets[5].Data, buildRunResultSet.Median.ValueOf(PodControlTime).Seconds())
 	}
 
-	type inputs struct {
-		Labels   []string
-		Datasets []dataset
-	}
-
 	return tmpl.Execute(w, inputs{
+		Text:     "Build run times with different numbers of parallel builds",
+		LabelX:   "number of parallel builds",
+		LabelY:   "time in seconds",
 		Labels:   labels,
 		Datasets: datasets,
 	})

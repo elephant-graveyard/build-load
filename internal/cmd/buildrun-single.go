@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/gonvenience/bunt"
 	"github.com/homeport/build-load/internal/load"
@@ -28,6 +29,9 @@ var buildRunOnceCmdSettings struct {
 	parallel  int
 	namingCfg load.NamingConfig
 	buildCfg  load.BuildConfig
+
+	htmlOutput string
+	csvOutput  string
 }
 
 var buildRunOnceCmd = &cobra.Command{
@@ -51,6 +55,14 @@ var buildRunOnceCmd = &cobra.Command{
 			return err
 		}
 
+		store(buildRunOnceCmdSettings.htmlOutput, func(w io.Writer) error {
+			return load.CreateBuildrunResultsChartJS(buildRunResults, w)
+		})
+
+		store(buildRunOnceCmdSettings.csvOutput, func(w io.Writer) error {
+			return load.CreateBuildRunResultsCSV(buildRunResults, w)
+		})
+
 		fmt.Print(load.CalculateBuildRunResultSet(buildRunResults))
 
 		return nil
@@ -64,6 +76,9 @@ func init() {
 	buildRunOnceCmd.PersistentFlags().SortFlags = false
 
 	buildRunOnceCmd.Flags().IntVar(&buildRunOnceCmdSettings.parallel, "parallel", 1, "number of parallel buildruns")
+
+	buildRunOnceCmd.Flags().StringVar(&buildRunOnceCmdSettings.htmlOutput, "html", "", "filename of the HTML report")
+	buildRunOnceCmd.Flags().StringVar(&buildRunOnceCmdSettings.csvOutput, "csv", "", "filename of the CSV report")
 
 	applyNamingFlags(buildRunOnceCmd, &buildRunOnceCmdSettings.namingCfg)
 	applyBuildRunSettingsFlags(buildRunOnceCmd, &buildRunOnceCmdSettings.buildCfg)
