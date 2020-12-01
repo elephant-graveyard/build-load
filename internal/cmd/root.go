@@ -17,11 +17,13 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/neat"
+	"github.com/gonvenience/wrap"
 	"github.com/homeport/build-load/internal/load"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -40,14 +42,28 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprint(os.Stderr, neat.ContentBox(
-			"Error occurred",
-			err.Error(),
+		var headline string = "Error occurred"
+		var code int = 1
+		var buf bytes.Buffer
+
+		switch terr := err.(type) {
+		case wrap.ContextError:
+			headline = fmt.Sprintf("Error: %s", terr.Context())
+			buf.WriteString(terr.Cause().Error())
+
+		default:
+			buf.WriteString(terr.Error())
+		}
+
+		neat.Box(
+			os.Stderr,
+			headline,
+			&buf,
 			neat.HeadlineColor(bunt.Coral),
 			neat.ContentColor(bunt.DimGray),
-		))
+		)
 
-		os.Exit(1)
+		os.Exit(code)
 	}
 }
 
