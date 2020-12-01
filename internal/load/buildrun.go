@@ -138,7 +138,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 				return fmt.Sprintf("%.1f %s", tmp, mods[i])
 			}
 
-			bunt.Printf("Keep in mind, with Moccasin{_%s_}, the estimated resource request will be roughly SlateGray{%v CPU cores} and LightSlateGray{%v system memory}. Available in the cluster are SlateGray{%v CPU cores} and LightSlateGray{%v system memory}.\n\n",
+			bunt.Printf("With Moccasin{_%s_}, the estimated resource request will be roughly SlateGray{%v CPU cores} and LightSlateGray{%v system memory}. Available in the cluster are SlateGray{%v CPU cores} and LightSlateGray{%v system memory}.\n\n",
 				text.Plural(parallel, "concurrent buildrun"),
 				resourcesForClusterBuildStrategy.Cpu(),
 				scaleToString(resourcesForClusterBuildStrategy.Memory()),
