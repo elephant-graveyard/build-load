@@ -101,7 +101,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 		}
 
 		if totalBuildRuns-completedBuildRuns > 0 {
-			bunt.Printf("PaleGoldenrod{_Please note:_} With currently %s, there might be some interference with the test buildruns. Please take the current system utilisation into consideration when analysing any performance measurements.\n",
+			bunt.Printf("PaleGoldenrod{_Please note:_} With currently %s, there might be some interference with the test buildruns. Please take the current system utilization into consideration when analysing any performance measurements.\n",
 				text.Plural(totalBuildRuns-completedBuildRuns, "active buildrun"),
 			)
 
