@@ -18,11 +18,13 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 
 	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/wrap"
 	"github.com/homeport/build-load/internal/load"
 	"github.com/spf13/cobra"
 )
@@ -44,6 +46,21 @@ var buildRunSeriesCmd = &cobra.Command{
 	Long:          bunt.Sprintf("*Creates a series of buildruns*\n\nCheck _buildruns_ command help for more details and examples regarding buildrun specific flags."),
 	SilenceUsage:  true,
 	SilenceErrors: true,
+
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if buildRunSeriesCmdSettings.buildTestsMin <= 0 ||
+			buildRunSeriesCmdSettings.buildTestsMax <= 0 ||
+			buildRunSeriesCmdSettings.buildTestsIncrement <= 0 ||
+			buildRunSeriesCmdSettings.buildTestsMin > buildRunSeriesCmdSettings.buildTestsMax {
+			return wrap.Errorf(
+				fmt.Errorf(cmd.UsageString()),
+				"input parameters for min, max, and increment are out of bounds",
+			)
+		}
+
+		return nil
+	},
+
 	RunE: func(cmd *cobra.Command, args []string) error {
 		kubeAccess, err := load.NewKubeAccess()
 		if err != nil {
@@ -87,9 +104,9 @@ func init() {
 	buildRunSeriesCmd.Flags().SortFlags = false
 	buildRunSeriesCmd.PersistentFlags().SortFlags = false
 
-	buildRunSeriesCmd.Flags().IntVar(&buildRunSeriesCmdSettings.buildTestsMin, "build-tests-min", 5, "lowest number of parallel builds to test")
-	buildRunSeriesCmd.Flags().IntVar(&buildRunSeriesCmdSettings.buildTestsMax, "build-tests-max", 100, "highest number of parallel builds to test")
-	buildRunSeriesCmd.Flags().IntVar(&buildRunSeriesCmdSettings.buildTestsIncrement, "build-tests-increment", 5, "increment for spinning up the number of parallel tests")
+	buildRunSeriesCmd.Flags().IntVar(&buildRunSeriesCmdSettings.buildTestsMin, "build-tests-min", 5, "lowest number of parallel builds to test (must be greater than zero)")
+	buildRunSeriesCmd.Flags().IntVar(&buildRunSeriesCmdSettings.buildTestsMax, "build-tests-max", 100, "highest number of parallel builds to test (must be greater than zero and min)")
+	buildRunSeriesCmd.Flags().IntVar(&buildRunSeriesCmdSettings.buildTestsIncrement, "build-tests-increment", 5, "increment for spinning up the number of parallel tests (must be greater than zero)")
 
 	buildRunSeriesCmd.Flags().StringVar(&buildRunSeriesCmdSettings.htmlOutput, "html", "", "filename of the HTML report")
 	buildRunSeriesCmd.Flags().StringVar(&buildRunSeriesCmdSettings.csvOutput, "csv", "", "filename of the CSV report")
