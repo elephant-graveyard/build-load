@@ -60,10 +60,14 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 						names[i] = entry.GetName()
 					}
 
-					return fmt.Errorf("failed to find ClusterBuildStrategy %s, available strategies are: %s",
-						buildCfg.ClusterBuildStrategy,
-						strings.Join(names, "\n"),
-					)
+					if len(names) > 0 {
+						return bunt.Errorf("failed to find ClusterBuildStrategy _%s_, available strategies are: %s",
+							buildCfg.ClusterBuildStrategy,
+							strings.Join(names, "\n"),
+						)
+					}
+
+					return bunt.Errorf("failed to find ClusterBuildStrategy _%s_", buildCfg.ClusterBuildStrategy)
 				}
 
 			case http.StatusForbidden:
