@@ -60,7 +60,6 @@ func Execute() {
 			headline,
 			&buf,
 			neat.HeadlineColor(bunt.Coral),
-			neat.ContentColor(bunt.DimGray),
 		)
 
 		os.Exit(code)
