@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"strings"
 	"time"
 
@@ -29,7 +30,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wrap"
+	"github.com/lucasb-eyer/go-colorful"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/pkg/ptr"
@@ -267,7 +270,29 @@ func buildRunError(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) error
 
 	if taskRun, taskRunPod := lookUpTaskRunAndPod(kubeAccess, buildRun); taskRun != nil && taskRunPod != nil {
 		var buf bytes.Buffer
+		var colorise = func(s string) string {
+			var h = fnv.New32()
+			h.Write([]byte(s))
+			tmp := h.Sum32()
+
+			var color = colorful.Color{
+				R: float64((tmp >> 16) & 0xFF),
+				G: float64((tmp >> 8) & 0xFF),
+				B: float64((tmp >> 0) & 0xFF),
+			}
+
+			color = color.BlendHsv(bunt.DimGray, 0.42)
+
+			return bunt.Style(
+				fmt.Sprintf("[%s]", s),
+				bunt.Foreground(color),
+				bunt.Bold(),
+			)
+		}
+
 		for _, container := range append(taskRunPod.Spec.InitContainers, taskRunPod.Spec.Containers...) {
+			containerName := colorise(container.Name)
+
 			reader, err := kubeAccess.Client.
 				CoreV1().
 				RESTClient().
@@ -285,7 +310,7 @@ func buildRunError(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) error
 				var scanner = bufio.NewScanner(reader)
 				for scanner.Scan() {
 					for _, line := range strings.Split(scanner.Text(), "\n") {
-						fmt.Fprintf(&buf, "[%s] %s\n", container.Name, line)
+						fmt.Fprintf(&buf, "%s %s\n", containerName, line)
 					}
 				}
 			}
