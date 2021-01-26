@@ -268,7 +268,7 @@ func buildRunError(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) error
 		return nil
 	}
 
-	if taskRun, taskRunPod := lookUpTaskRunAndPod(kubeAccess, buildRun); taskRun != nil && taskRunPod != nil {
+	if _, taskRunPod := lookUpTaskRunAndPod(kubeAccess, buildRun); taskRunPod != nil {
 		var buf bytes.Buffer
 		var colorise = func(s string) string {
 			var h = fnv.New32()
