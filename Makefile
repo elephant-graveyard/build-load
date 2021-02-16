@@ -23,7 +23,7 @@ all: clean verify build
 .PHONY: clean
 clean:
 	@GO111MODULE=on go clean -cache $(shell go list ./...)
-	@rm -rf binaries
+	@rm -rf dist
 
 .PHONY: verify
 verify:
@@ -43,30 +43,10 @@ test: $(sources)
 		-compilers=2 \
 		-cover
 
-.PHONY: build
-build: binaries/build-load-linux-amd64 binaries/build-load-darwin-amd64
-	@/bin/sh -c "echo '\n\033[1mSHA sum of compiled binaries:\033[0m'"
-	@shasum -a256 binaries/build-load-linux-amd64 binaries/build-load-darwin-amd64
-	@echo
-
 .PHONY: install
 install: $(sources)
 	@GO111MODULE=on CGO_ENABLED=0 GOOS=$(goos) GOARCH=$(goarch) go build \
 		-tags netgo \
 		-ldflags='-s -w -extldflags "-static" -X github.com/homeport/build-load/internal/cmd.version=$(version)' \
 		-o /usr/local/bin/build-load \
-		cmd/build-load/main.go
-
-binaries/build-load-linux-amd64: $(sources)
-	@GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-		-tags netgo \
-		-ldflags='-s -w -extldflags "-static" -X github.com/homeport/build-load/internal/cmd.version=$(version)' \
-		-o binaries/build-load-linux-amd64 \
-		cmd/build-load/main.go
-
-binaries/build-load-darwin-amd64: $(sources)
-	@GO111MODULE=on CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build \
-		-tags netgo \
-		-ldflags='-s -w -extldflags "-static" -X github.com/homeport/build-load/internal/cmd.version=$(version)' \
-		-o binaries/build-load-darwin-amd64 \
 		cmd/build-load/main.go

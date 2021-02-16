@@ -130,7 +130,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 
 				tmp := float64(q.Value())
 
-				var i = 0
+				var i int
 				for i = 0; tmp > 1023.9 && i < len(mods); i++ {
 					tmp /= 1024.0
 				}
