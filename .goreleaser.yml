@@ -7,7 +7,6 @@ builds:
     - darwin
     goarch:
     - amd64
-    - arm64
     main: ./cmd/build-load/main.go
     flags:
     - -tags
