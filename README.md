@@ -110,20 +110,25 @@ Alternatively, run `make build` and pick the respective binary for your operatin
 
 ### Release Process
 
-To promote a new version, create a new release in GitHub. This will trigger a build of the binaries in Travis CI and uploads them to the respective release automatically within a couple of minutes. The best way to create a new release is to use the GitHub CLI.
+To promote a new version, create a new release in GitHub. This will trigger a build of the binaries using GitHub Actions and uploads them to the respective release automatically within a couple of minutes. As part of this process, the Homebrew tap is updated, too. The best way to create a new release is to use the GitHub CLI.
 
 As a pre-requisite, a [`semver` tool](https://github.com/fsaintjacques/semver-tool) and the [GitHub CLI](https://github.com/cli/cli) are suggested on your system, for example on macOS:
 
-```sh
-curl --silent --fail --location https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver --output /usr/local/bin/semver && chmod a+rx /usr/local/bin/semver
-brew install gh
-```
+- `semver` tool
+  ```sh
+  curl --silent --fail --location https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver --output /usr/local/bin/semver && chmod a+rx /usr/local/bin/semver
+  ```
+
+- GitHub CLI
+  ```sh
+  brew install gh
+  ```
 
 Example for creating a new patch release:
 
 ```sh
 VERSION="v$(semver bump patch "$(git describe --tags --abbrev=0)")"
-gh release create "$VERSION" --title "build-load release $VERSION"
+gh release create "$VERSION"
 ```
 
-The CLI will interactively prompt for missing details like the notes.
+The CLI will interactively prompt for more details. You can leave everything empty, because the automation will set a title and release notes automatically.
