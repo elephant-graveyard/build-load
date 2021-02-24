@@ -17,6 +17,7 @@ limitations under the License.
 package load
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -46,7 +47,7 @@ type BuildRunOption func(*buildRunOptions)
 // would put onto the system
 func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel int) error {
 	// Check whether the configured cluster build strategy is available
-	clusterBuildStrategy, err := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().Get(buildCfg.ClusterBuildStrategy, metav1.GetOptions{})
+	clusterBuildStrategy, err := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().Get(context.TODO(), buildCfg.ClusterBuildStrategy, metav1.GetOptions{})
 	if err != nil {
 		clusterBuildStrategy = nil
 
@@ -54,7 +55,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 		case *errors.StatusError:
 			switch terr.ErrStatus.Code {
 			case http.StatusNotFound:
-				if list, _ := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().List(metav1.ListOptions{}); list != nil {
+				if list, _ := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().List(context.TODO(), metav1.ListOptions{}); list != nil {
 					var names = make([]string, len(list.Items))
 					for i, entry := range list.Items {
 						names[i] = entry.GetName()
@@ -78,7 +79,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 
 	// Given that the permissions allow it, check how many buildruns are
 	// currently in the system already
-	if buildRunsResults, err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns("").List(metav1.ListOptions{}); err == nil {
+	if buildRunsResults, err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns("").List(context.TODO(), metav1.ListOptions{}); err == nil {
 		var (
 			totalBuildRuns     int
 			completedBuildRuns int
@@ -109,7 +110,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 		}
 	}
 
-	if nodesResults, err := kubeAccess.Client.CoreV1().Nodes().List(metav1.ListOptions{}); err == nil {
+	if nodesResults, err := kubeAccess.Client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{}); err == nil {
 		var totalCPU int64
 		var totalMemory int64
 		for _, node := range nodesResults.Items {
@@ -166,13 +167,13 @@ func SkipDelete(value bool) BuildRunOption {
 }
 
 // ExecuteSingleBuildRun executes a single buildrun based on the given settings
-func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string, buildSpec buildv1alpha1.BuildSpec, options ...BuildRunOption) (*BuildRunResult, error) {
+func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string, buildSpec buildv1alpha1.BuildSpec, buildAnnotations map[string]string, options ...BuildRunOption) (*Result, error) {
 	var buildRunOptions = buildRunOptions{}
 	for _, option := range options {
 		option(&buildRunOptions)
 	}
 
-	build, err := applyBuild(kubeAccess, newBuild(namespace, name, buildSpec))
+	build, err := applyBuild(kubeAccess, newBuild(namespace, name, buildSpec, buildAnnotations))
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +216,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 		}()
 	}
 
-	var buildRunResult = BuildRunResult{
+	var buildRunResult = Result{
 		Value{
 			BuildrunCompletionTime,
 			duration(buildRun.CreationTimestamp.Time, buildRun.Status.CompletionTime.Time),
@@ -274,12 +275,12 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 
 // ExecuteParallelBuildRuns executes the same buildrun multiple times in
 // parallel
-func ExecuteParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, buildCfg BuildConfig, parallel int) ([]BuildRunResult, error) {
+func ExecuteParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, buildCfg BuildConfig, parallel int) ([]Result, error) {
 	var errors = make(chan error, parallel)
 	var wg sync.WaitGroup
 	wg.Add(parallel)
 
-	var buildRunResults = make([]BuildRunResult, parallel)
+	var buildRunResults = make([]Result, parallel)
 	for i := 0; i < parallel; i++ {
 		go func(idx int) {
 			defer wg.Done()
@@ -292,11 +293,14 @@ func ExecuteParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, bui
 				return
 			}
 
+			buildAnnotations := createBuildAnnotations(buildCfg)
+
 			result, err := ExecuteSingleBuildRun(
 				kubeAccess,
 				namespace,
 				name,
 				*buildSpec,
+				buildAnnotations,
 				GenerateServiceAccount(buildCfg.GenerateServiceAccount),
 				SkipDelete(buildCfg.SkipDelete),
 			)
@@ -318,8 +322,8 @@ func ExecuteParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, bui
 
 // ExecuteSeriesOfParallelBuildRuns executes a series of parallel buildruns
 // increasing the number of parallel buildruns with each interation
-func ExecuteSeriesOfParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, buildCfg BuildConfig, start int, end int, increment int) ([]BuildRunResultSet, error) {
-	var results = []BuildRunResultSet{}
+func ExecuteSeriesOfParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, buildCfg BuildConfig, start int, end int, increment int) ([]ResultSet, error) {
+	var results = []ResultSet{}
 
 	for parallelBuilds := start; parallelBuilds <= end; parallelBuilds += increment {
 		buildRunResults, err := ExecuteParallelBuildRuns(kubeAccess, namingCfg, buildCfg, parallelBuilds)
@@ -327,7 +331,7 @@ func ExecuteSeriesOfParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingCon
 			return nil, err
 		}
 
-		buildRunResultSet := CalculateBuildRunResultSet(buildRunResults)
+		buildRunResultSet := CalculateResultSet(buildRunResults, "buildrun")
 
 		// TODO Make it configure whether this should be printed or not
 		fmt.Println(buildRunResultSet)
@@ -358,7 +362,7 @@ func ExecuteTestPlan(kubeAccess KubeAccess, testplan TestPlan) error {
 
 		step.BuildSpec.Output.ImageURL = outputImageURL
 
-		if _, err := ExecuteSingleBuildRun(kubeAccess, testplan.Namespace, name, step.BuildSpec, GenerateServiceAccount(testplan.GenerateServiceAccount)); err != nil {
+		if _, err := ExecuteSingleBuildRun(kubeAccess, testplan.Namespace, name, step.BuildSpec, step.BuildAnnotations, GenerateServiceAccount(testplan.GenerateServiceAccount)); err != nil {
 			return err
 		}
 	}

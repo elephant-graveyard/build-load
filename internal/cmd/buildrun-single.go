@@ -60,10 +60,10 @@ var buildRunOnceCmd = &cobra.Command{
 		})
 
 		store(buildRunOnceCmdSettings.csvOutput, func(w io.Writer) error {
-			return load.CreateBuildRunResultsCSV(buildRunResults, w)
+			return load.CreateResultsCSV(buildRunResults, w)
 		})
 
-		fmt.Print(load.CalculateBuildRunResultSet(buildRunResults))
+		fmt.Print(load.CalculateResultSet(buildRunResults, "buildrun"))
 
 		return nil
 	},

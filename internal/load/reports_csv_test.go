@@ -27,10 +27,10 @@ import (
 )
 
 var _ = Describe("create CSV reports", func() {
-	var mockBuildRunResults = func(n int) []BuildRunResult {
-		var result = make([]BuildRunResult, n)
+	var mockResults = func(n int) []Result {
+		var result = make([]Result, n)
 		for i := 0; i < n; i++ {
-			result[i] = BuildRunResult{
+			result[i] = Result{
 				Value{MockLabel1, time.Duration(i+1) * 1 * time.Second},
 				Value{MockLabel2, time.Duration(i+1) * 10 * time.Second},
 				Value{MockLabel3, time.Duration(i+1) * 100 * time.Second},
@@ -42,12 +42,12 @@ var _ = Describe("create CSV reports", func() {
 		return result
 	}
 
-	Context("having a list of buildrun results", func() {
-		It("should create a CSV file based on the content in the buildrun results", func() {
-			var buildrunResults = mockBuildRunResults(5)
+	Context("having a list of results", func() {
+		It("should create a CSV file based on the content in the results", func() {
+			var buildrunResults = mockResults(5)
 
 			var buf bytes.Buffer
-			err := CreateBuildRunResultsCSV(buildrunResults, &buf)
+			err := CreateResultsCSV(buildrunResults, &buf)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(buf.String()).To(Equal(`buildrun, mock #1, mock #2, mock #3, mock #4, mock #5
@@ -60,18 +60,18 @@ var _ = Describe("create CSV reports", func() {
 		})
 	})
 
-	Context("having a buildrun result set", func() {
-		It("should create a CSV file based on the content in the buildrun result set", func() {
-			var buildRunResultSets = []BuildRunResultSet{
-				CalculateBuildRunResultSet(mockBuildRunResults(5)),
-				CalculateBuildRunResultSet(mockBuildRunResults(10)),
-				CalculateBuildRunResultSet(mockBuildRunResults(15)),
-				CalculateBuildRunResultSet(mockBuildRunResults(20)),
-				CalculateBuildRunResultSet(mockBuildRunResults(25)),
+	Context("having a result set", func() {
+		It("should create a CSV file based on the content in the result set", func() {
+			var buildRunResultSets = []ResultSet{
+				CalculateResultSet(mockResults(5), "thing"),
+				CalculateResultSet(mockResults(10), "thing"),
+				CalculateResultSet(mockResults(15), "thing"),
+				CalculateResultSet(mockResults(20), "thing"),
+				CalculateResultSet(mockResults(25), "thing"),
 			}
 
 			var buf bytes.Buffer
-			err := CreateBuildRunResultSetCSV(buildRunResultSets, &buf)
+			err := CreateResultSetCSV(buildRunResultSets, &buf)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(buf.String()).To(Equal(`number of results, mock #1, mock #2, mock #3, mock #4 , mock #5

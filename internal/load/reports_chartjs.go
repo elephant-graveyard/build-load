@@ -136,7 +136,7 @@ func prepareDatasets() []dataset {
 }
 
 // CreateBuildrunResultsChartJS creates a page with ChartJS to display the results of buildruns
-func CreateBuildrunResultsChartJS(data []BuildRunResult, w io.Writer) error {
+func CreateBuildrunResultsChartJS(data []Result, w io.Writer) error {
 	tmpl, err := template.New("report").Parse(reportTemplate)
 	if err != nil {
 		return err
@@ -163,7 +163,7 @@ func CreateBuildrunResultsChartJS(data []BuildRunResult, w io.Writer) error {
 }
 
 // CreateChartJS creates a page with ChartsJS to render the provided results
-func CreateChartJS(data []BuildRunResultSet, w io.Writer) error {
+func CreateChartJS(data []ResultSet, w io.Writer) error {
 	tmpl, err := template.New("report").Parse(reportTemplate)
 	if err != nil {
 		return err
