@@ -63,6 +63,10 @@ func NewKubeAccess() (*KubeAccess, error) {
 		return nil, err
 	}
 
+	// the default QPS is 5 which is not very much to make load on the system
+	restConfig.QPS = 500
+	restConfig.Burst = 500
+
 	client, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err

@@ -22,10 +22,11 @@ import (
 	"time"
 )
 
-// CalculateBuildRunResultSet creates a buildrun result set using a list of
-// buildrun results to get the minimum, mean, median, and maximum results
-func CalculateBuildRunResultSet(results []BuildRunResult) BuildRunResultSet {
-	return BuildRunResultSet{
+// CalculateResultSet creates a result set using a list of
+// results to get the minimum, mean, median, and maximum results
+func CalculateResultSet(results []Result, entityType string) ResultSet {
+	return ResultSet{
+		EntityType:      entityType,
 		NumberOfResults: len(results),
 		Minimum:         min(results),
 		Maximum:         max(results),
@@ -34,7 +35,7 @@ func CalculateBuildRunResultSet(results []BuildRunResult) BuildRunResultSet {
 	}
 }
 
-func emptyBuildRunResult(reference BuildRunResult, init time.Duration) (result BuildRunResult) {
+func emptyResult(reference Result, init time.Duration) (result Result) {
 	for _, value := range reference {
 		result = append(result, Value{Description: value.Description, Value: init})
 	}
@@ -42,8 +43,8 @@ func emptyBuildRunResult(reference BuildRunResult, init time.Duration) (result B
 	return
 }
 
-func min(results []BuildRunResult) BuildRunResult {
-	tmp := emptyBuildRunResult(results[0], time.Duration(math.MaxInt64))
+func min(results []Result) Result {
+	tmp := emptyResult(results[0], time.Duration(math.MaxInt64))
 	for _, buildRunResult := range results {
 		for i, value := range buildRunResult {
 			if value.Value < tmp[i].Value {
@@ -55,8 +56,8 @@ func min(results []BuildRunResult) BuildRunResult {
 	return tmp
 }
 
-func max(results []BuildRunResult) BuildRunResult {
-	tmp := emptyBuildRunResult(results[0], time.Duration(math.MinInt64))
+func max(results []Result) Result {
+	tmp := emptyResult(results[0], time.Duration(math.MinInt64))
 	for _, buildRunResult := range results {
 		for i, value := range buildRunResult {
 			if value.Value > tmp[i].Value {
@@ -68,8 +69,8 @@ func max(results []BuildRunResult) BuildRunResult {
 	return tmp
 }
 
-func mean(results []BuildRunResult) BuildRunResult {
-	tmp := emptyBuildRunResult(results[0], time.Duration(0))
+func mean(results []Result) Result {
+	tmp := emptyResult(results[0], time.Duration(0))
 	for _, buildRunResult := range results {
 		for i, value := range buildRunResult {
 			tmp[i].Value += value.Value
@@ -83,7 +84,7 @@ func mean(results []BuildRunResult) BuildRunResult {
 	return tmp
 }
 
-func median(results []BuildRunResult) BuildRunResult {
+func median(results []Result) Result {
 	type values struct {
 		values []time.Duration
 	}
@@ -102,7 +103,7 @@ func median(results []BuildRunResult) BuildRunResult {
 	}
 
 	length := len(results)
-	tmp := emptyBuildRunResult(results[0], time.Duration(0))
+	tmp := emptyResult(results[0], time.Duration(0))
 	for i := range tmp {
 		switch length % 2 {
 		case 0:

@@ -78,7 +78,7 @@ var buildRunSeriesCmd = &cobra.Command{
 		})
 
 		store(buildRunSeriesCmdSettings.csvOutput, func(w io.Writer) error {
-			return load.CreateBuildRunResultSetCSV(results, w)
+			return load.CreateResultSetCSV(results, w)
 		})
 
 		return nil

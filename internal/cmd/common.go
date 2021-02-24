@@ -75,6 +75,7 @@ func applyBuildRunSettingsFlags(cmd *cobra.Command, buildCfg *load.BuildConfig) 
 	pf.StringVar(&buildCfg.SourceRevision, "source-revision", "master", "specify the branch, tag, or commit to be used")
 	pf.StringVar(&buildCfg.SourceSecretRef, "source-secret", "", "specify secret to be used to access the source")
 	pf.StringVar(&buildCfg.SourceDockerfile, "dockerfile", "Dockerfile", "specify name of the docker file for kaniko builds")
+	pf.BoolVar(&buildCfg.SkipVerifySourceRepository, "skip-verify-repository", false, "skip the verification of the source repository")
 
 	pf.StringVar(&buildCfg.OutputImageURL, "output-image-url", "", "output image URL")
 	pf.StringVar(&buildCfg.OutputSecretRef, "output-secret-ref", "", "secret that contains the access credentials for the output registry")

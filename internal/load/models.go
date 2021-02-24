@@ -37,7 +37,7 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-// Naming constants for the buildrun results
+// Naming constants for the results
 const (
 	BuildrunCompletionTime = "BuildRun completion time"
 	BuildrunControlTime    = "BuildRun control time"
@@ -45,6 +45,7 @@ const (
 	TaskrunControlTime     = "TaskRun control time"
 	PodCompletionTime      = "Pod completion time"
 	PodControlTime         = "Pod control time"
+	BuildRegistrationTime  = "Build registration time"
 )
 
 // KubeAccess contains Kubernetes cluster access objects in a single place
@@ -63,28 +64,31 @@ type NamingConfig struct {
 
 // BuildConfig contains all fields required to setup a buildRun
 type BuildConfig struct {
-	ClusterBuildStrategy   string
-	SourceURL              string
-	SourceRevision         string
-	SourceContextDir       string
-	SourceSecretRef        string
-	SourceDockerfile       string
-	GenerateServiceAccount bool
-	OutputImageURL         string
-	OutputSecretRef        string
-	Timeout                time.Duration
-	SkipDelete             bool
+	ClusterBuildStrategy       string
+	SourceURL                  string
+	SourceRevision             string
+	SourceContextDir           string
+	SourceSecretRef            string
+	SourceDockerfile           string
+	GenerateServiceAccount     bool
+	OutputImageURL             string
+	OutputSecretRef            string
+	Timeout                    time.Duration
+	SkipDelete                 bool
+	SkipVerifySourceRepository bool
 }
 
-// BuildRunResultSet is an aggregated result set based on multiple
-// buildrun results
-type BuildRunResultSet struct {
+// ResultSet is an aggregated result set based on multiple
+// results
+type ResultSet struct {
+	EntityType string
+
 	NumberOfResults int
 
-	Minimum BuildRunResult
-	Maximum BuildRunResult
-	Mean    BuildRunResult
-	Median  BuildRunResult
+	Minimum Result
+	Maximum Result
+	Mean    Result
+	Median  Result
 }
 
 // Value describes a time duration with a description (explanation)
@@ -93,20 +97,21 @@ type Value struct {
 	Value       time.Duration
 }
 
-// BuildRunResult contains the raw time results of a buildrun
-type BuildRunResult []Value
+// Result contains the raw time results
+type Result []Value
 
 // TestPlan is a plan with steps that define tests
 type TestPlan struct {
 	Namespace              string `yaml:"namespace" json:"namespace"`
 	GenerateServiceAccount bool   `yaml:"generateServiceAccount" json:"generateServiceAccount"`
 	Steps                  []struct {
-		Name      string                 `yaml:"name" json:"name"`
-		BuildSpec buildv1alpha.BuildSpec `yaml:"buildSpec" json:"buildSpec"`
+		Name             string                 `yaml:"name" json:"name"`
+		BuildAnnotations map[string]string      `yaml:"buildAnnotations" json:"buildAnnotations"`
+		BuildSpec        buildv1alpha.BuildSpec `yaml:"buildSpec" json:"buildSpec"`
 	} `yaml:"steps" json:"steps"`
 }
 
-func (brr BuildRunResult) String() string {
+func (brr Result) String() string {
 	var tmp = []string{}
 	for _, value := range brr {
 		tmp = append(tmp, bunt.Sprintf("_%s_=%v",
@@ -119,7 +124,7 @@ func (brr BuildRunResult) String() string {
 }
 
 // ValueOf returns the value that matches with the given description
-func (brr BuildRunResult) ValueOf(description string) time.Duration {
+func (brr Result) ValueOf(description string) time.Duration {
 	for _, value := range brr {
 		if value.Description == description {
 			return value.Value
@@ -162,6 +167,16 @@ func NewTestPlan(in io.Reader) (*TestPlan, error) {
 
 func createNamespaceAndName(namingCfg NamingConfig, buildCfg BuildConfig, idx int) (string, string) {
 	return namingCfg.Namespace, fmt.Sprintf("%s-%s-%d", namingCfg.Prefix, buildCfg.ClusterBuildStrategy, idx)
+}
+
+func createBuildAnnotations(buildCfg BuildConfig) map[string]string {
+	if buildCfg.SkipVerifySourceRepository {
+		return map[string]string{
+			buildv1alpha.AnnotationBuildVerifyRepository: "false",
+		}
+	}
+
+	return nil
 }
 
 func createBuildSpec(name string, buildCfg BuildConfig) (*buildv1alpha.BuildSpec, error) {

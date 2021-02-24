@@ -17,12 +17,14 @@ limitations under the License.
 package load
 
 import (
+	"fmt"
+
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/neat"
 	"github.com/gonvenience/text"
 )
 
-func (brs BuildRunResultSet) String() string {
+func (rs ResultSet) String() string {
 	bold := func(args ...string) []string {
 		var tmp = make([]string, len(args))
 		for i, str := range args {
@@ -35,14 +37,14 @@ func (brs BuildRunResultSet) String() string {
 	headline := bold("Description", "Minimum", "Mean", "Median", "Maximum")
 	tableData := [][]string{headline}
 
-	for _, entry := range brs.Minimum {
+	for _, entry := range rs.Minimum {
 		line := make([]string, len(headline))
 		line[0] = entry.Description
 
 		tableData = append(tableData, line)
 	}
 
-	for i, x := range []BuildRunResult{brs.Minimum, brs.Mean, brs.Median, brs.Maximum} {
+	for i, x := range []Result{rs.Minimum, rs.Mean, rs.Median, rs.Maximum} {
 		for j, value := range x {
 			tableData[j+1][i+1] = value.Value.String()
 		}
@@ -54,7 +56,7 @@ func (brs BuildRunResultSet) String() string {
 	}
 
 	return neat.ContentBox(
-		bunt.Sprintf("Results based on %s", text.Plural(brs.NumberOfResults, "parallel buildrun")),
+		bunt.Sprintf("Results based on %s", text.Plural(rs.NumberOfResults, fmt.Sprintf("parallel %s", rs.EntityType))),
 		table,
 		neat.HeadlineColor(bunt.Beige),
 		neat.NoLineWrap(),

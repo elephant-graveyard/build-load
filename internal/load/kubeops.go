@@ -19,6 +19,7 @@ package load
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -42,7 +43,7 @@ var (
 	defaultBuildRunWaitTimeout = time.Duration(5 * time.Minute)
 )
 
-func newBuild(namespace string, name string, buildSpec buildv1alpha1.BuildSpec) buildv1alpha1.Build {
+func newBuild(namespace string, name string, buildSpec buildv1alpha1.BuildSpec, annotations map[string]string) buildv1alpha1.Build {
 	return buildv1alpha1.Build{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Build",
@@ -50,8 +51,9 @@ func newBuild(namespace string, name string, buildSpec buildv1alpha1.BuildSpec) 
 		},
 
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
+			Annotations: annotations,
+			Name:        name,
+			Namespace:   namespace,
 		},
 
 		Spec: buildSpec,
@@ -91,7 +93,7 @@ func applyBuild(kubeAccess KubeAccess, build buildv1alpha1.Build) (*buildv1alpha
 	return kubeAccess.BuildClient.
 		BuildV1alpha1().
 		Builds(build.Namespace).
-		Create(&build)
+		Create(context.TODO(), &build, metav1.CreateOptions{})
 }
 
 func applyBuildRun(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) (*buildv1alpha1.BuildRun, error) {
@@ -103,28 +105,28 @@ func applyBuildRun(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) (*bui
 	return kubeAccess.BuildClient.
 		BuildV1alpha1().
 		BuildRuns(buildRun.Namespace).
-		Create(&buildRun)
+		Create(context.TODO(), &buildRun, metav1.CreateOptions{})
 }
 
 func deleteBuild(kubeAccess KubeAccess, namespace string, name string, deleteOptions *metav1.DeleteOptions) error {
-	_, err := kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Get(name, metav1.GetOptions{})
+	_, err := kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		return nil
 	}
 
 	debug("Delete build %s", name)
-	if err := kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Delete(name, deleteOptions); err != nil {
+	if err := kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Delete(context.TODO(), name, *deleteOptions); err != nil {
 		return err
 	}
 
 	return wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
-		_, err = kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Get(name, metav1.GetOptions{})
+		_, err = kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		return errors.IsNotFound(err), nil
 	})
 }
 
 func deleteBuildRun(kubeAccess KubeAccess, namespace string, name string, deleteOptions *metav1.DeleteOptions) error {
-	buildRun, err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(name, metav1.GetOptions{})
+	buildRun, err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		return nil
 	}
@@ -132,12 +134,12 @@ func deleteBuildRun(kubeAccess KubeAccess, namespace string, name string, delete
 	_, pod := lookUpTaskRunAndPod(kubeAccess, *buildRun)
 
 	debug("Delete buildrun %s", name)
-	if err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Delete(name, deleteOptions); err != nil {
+	if err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Delete(context.TODO(), name, *deleteOptions); err != nil {
 		return err
 	}
 
 	err = wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
-		_, err = kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(name, metav1.GetOptions{})
+		_, err = kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		return errors.IsNotFound(err), nil
 	})
 
@@ -147,7 +149,7 @@ func deleteBuildRun(kubeAccess KubeAccess, namespace string, name string, delete
 
 	if pod != nil {
 		err = wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
-			_, err = kubeAccess.Client.CoreV1().Pods(namespace).Get(pod.Name, metav1.GetOptions{})
+			_, err = kubeAccess.Client.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
 			return errors.IsNotFound(err), nil
 		})
 	}
@@ -169,7 +171,7 @@ func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.Bu
 
 	debug("Polling every %v to wait for completion of buildrun %s", interval, buildRun.Name)
 	err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
-		buildRun, err = kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(name, metav1.GetOptions{})
+		buildRun, err = kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -195,7 +197,7 @@ func lookUpTaskRunAndPod(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun)
 		tmp, err := kubeAccess.TektonClient.
 			TektonV1alpha1().
 			TaskRuns(buildRun.Namespace).
-			Get(*buildRun.Status.LatestTaskRunRef, metav1.GetOptions{})
+			Get(context.TODO(), *buildRun.Status.LatestTaskRunRef, metav1.GetOptions{})
 
 		if err == nil {
 			taskRun = tmp
@@ -208,7 +210,7 @@ func lookUpTaskRunAndPod(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun)
 		tmp, err := kubeAccess.Client.
 			CoreV1().
 			Pods(taskRun.Namespace).
-			Get(taskRun.Status.PodName, metav1.GetOptions{})
+			Get(context.TODO(), taskRun.Status.PodName, metav1.GetOptions{})
 
 		if err == nil {
 			taskRunPod = tmp
@@ -222,7 +224,7 @@ func lookUpTaskRunAndPod(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun)
 	listResp, err := kubeAccess.Client.
 		CoreV1().
 		Pods(buildRun.Namespace).
-		List(metav1.ListOptions{
+		List(context.TODO(), metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("buildrun.build.dev/name=%s", buildRun.Name)},
 		)
 
@@ -234,7 +236,7 @@ func lookUpTaskRunAndPod(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun)
 }
 
 func lookUpDockerCredentialsFromSecret(kubeAccess KubeAccess, namespace string, secretRef *corev1.LocalObjectReference) (string, string, error) {
-	secret, err := kubeAccess.Client.CoreV1().Secrets(namespace).Get(secretRef.Name, metav1.GetOptions{})
+	secret, err := kubeAccess.Client.CoreV1().Secrets(namespace).Get(context.TODO(), secretRef.Name, metav1.GetOptions{})
 	if err != nil {
 		return "", "", err
 	}
@@ -302,7 +304,7 @@ func buildRunError(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) error
 				Resource("pods").
 				SubResource("log").
 				Param("container", container.Name).
-				Stream()
+				Stream(context.TODO())
 
 			if err == nil {
 				defer reader.Close()
