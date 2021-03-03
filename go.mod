@@ -10,7 +10,7 @@ require (
 	github.com/gonvenience/wrap v1.1.0
 	github.com/lucasb-eyer/go-colorful v1.0.3
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/onsi/ginkgo v1.14.2
+	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.3
 	github.com/pelletier/go-toml v1.6.0 // indirect
 	github.com/shipwright-io/build v0.3.0
