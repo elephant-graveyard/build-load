@@ -8,7 +8,7 @@ require (
 	github.com/gonvenience/neat v1.3.5
 	github.com/gonvenience/text v1.0.6
 	github.com/gonvenience/wrap v1.1.0
-	github.com/lucasb-eyer/go-colorful v1.0.3
+	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.3
