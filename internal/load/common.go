@@ -25,7 +25,6 @@ import (
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wrap"
-	"github.com/mitchellh/go-homedir"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -38,7 +37,7 @@ func lookUpKubeConfigFilePath() (string, error) {
 		return value, nil
 	}
 
-	homedir, err := homedir.Dir()
+	homedir, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}

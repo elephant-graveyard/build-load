@@ -21,8 +21,9 @@ import (
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/wrap"
-	"github.com/homeport/build-load/internal/load"
 	"github.com/spf13/cobra"
+
+	"github.com/homeport/build-load/internal/load"
 )
 
 var buildsCmdSettings struct {
