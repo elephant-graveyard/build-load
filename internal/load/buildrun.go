@@ -24,14 +24,13 @@ import (
 	"sync"
 	"time"
 
-	buildv1alpha1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/text"
+	buildv1alpha1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type buildRunOptions struct {
@@ -178,12 +177,9 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 		return nil, err
 	}
 
-	var graceperiod = int64(0)
-	deleteOptions := metav1.DeleteOptions{GracePeriodSeconds: &graceperiod}
-
 	if !buildRunOptions.skipDelete {
 		defer func() {
-			if err := deleteBuild(kubeAccess, build.Namespace, build.Name, &deleteOptions); err != nil {
+			if err := deleteBuild(kubeAccess, build.Namespace, build.Name, defaultDeleteOptions); err != nil {
 				warn("failed to delete build %s, %v\n", name, err)
 			}
 		}()
@@ -196,7 +192,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 
 	if !buildRunOptions.skipDelete {
 		defer func() {
-			if err := deleteBuildRun(kubeAccess, buildRun.Namespace, buildRun.Name, &deleteOptions); err != nil {
+			if err := deleteBuildRun(kubeAccess, buildRun.Namespace, buildRun.Name, defaultDeleteOptions); err != nil {
 				warn("failed to delete buildrun %s, %v\n", name, err)
 			}
 		}()

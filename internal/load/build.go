@@ -47,12 +47,9 @@ func registerSingleBuild(kubeAccess KubeAccess, namespace string, name string, b
 		return nil, err
 	}
 
-	var graceperiod = int64(0)
-	deleteOptions := metav1.DeleteOptions{GracePeriodSeconds: &graceperiod}
-
 	if !buildRunOptions.skipDelete {
 		defer func() {
-			if err := deleteBuild(kubeAccess, build.Namespace, build.Name, &deleteOptions); err != nil {
+			if err := deleteBuild(kubeAccess, build.Namespace, build.Name, defaultDeleteOptions); err != nil {
 				warn("failed to delete build %s, %v\n", name, err)
 			}
 		}()
