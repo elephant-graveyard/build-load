@@ -178,7 +178,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 		return nil, err
 	}
 
-	var graceperiod int64 = int64(0)
+	var graceperiod = int64(0)
 	deleteOptions := metav1.DeleteOptions{GracePeriodSeconds: &graceperiod}
 
 	if !buildRunOptions.skipDelete {

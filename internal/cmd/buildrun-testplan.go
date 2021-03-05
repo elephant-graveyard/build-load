@@ -20,8 +20,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/homeport/build-load/internal/load"
 	"github.com/spf13/cobra"
+
+	"github.com/homeport/build-load/internal/load"
 )
 
 var buildRunTestplanCmdSettings struct {

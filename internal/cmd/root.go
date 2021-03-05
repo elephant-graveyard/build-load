@@ -24,9 +24,10 @@ import (
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/neat"
 	"github.com/gonvenience/wrap"
-	"github.com/homeport/build-load/internal/load"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/homeport/build-load/internal/load"
 )
 
 var shipwriteBuildURL = bunt.Sprintf("CornflowerBlue{~https://github.com/shipwright-io/build~}")
@@ -42,8 +43,8 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		var headline string = "Error occurred"
-		var code int = 1
+		var headline = "Error occurred"
+		var code = 1
 		var buf bytes.Buffer
 
 		switch terr := err.(type) {
