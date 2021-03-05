@@ -41,6 +41,9 @@ import (
 
 var (
 	defaultBuildRunWaitTimeout = time.Duration(5 * time.Minute)
+	defaultDeleteOptions       = &metav1.DeleteOptions{
+		GracePeriodSeconds: ptr.Int64(0),
+	}
 )
 
 func newBuild(namespace string, name string, buildSpec buildv1alpha1.BuildSpec, annotations map[string]string) buildv1alpha1.Build {
@@ -85,7 +88,7 @@ func newBuildRun(name string, build buildv1alpha1.Build, generateServiceAccount 
 }
 
 func applyBuild(kubeAccess KubeAccess, build buildv1alpha1.Build) (*buildv1alpha1.Build, error) {
-	if err := deleteBuild(kubeAccess, build.Namespace, build.Name, &metav1.DeleteOptions{GracePeriodSeconds: ptr.Int64(0)}); err != nil {
+	if err := deleteBuild(kubeAccess, build.Namespace, build.Name, defaultDeleteOptions); err != nil {
 		return nil, err
 	}
 
@@ -97,7 +100,7 @@ func applyBuild(kubeAccess KubeAccess, build buildv1alpha1.Build) (*buildv1alpha
 }
 
 func applyBuildRun(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) (*buildv1alpha1.BuildRun, error) {
-	if err := deleteBuildRun(kubeAccess, buildRun.Namespace, buildRun.Name, &metav1.DeleteOptions{GracePeriodSeconds: ptr.Int64(0)}); err != nil {
+	if err := deleteBuildRun(kubeAccess, buildRun.Namespace, buildRun.Name, defaultDeleteOptions); err != nil {
 		return nil, err
 	}
 
