@@ -14,13 +14,13 @@ require (
 	github.com/shipwright-io/build v0.3.1-0.20210305111301-3e3bf18672a3
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1
-	github.com/tektoncd/pipeline v0.20.1
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
+	github.com/tektoncd/pipeline v0.21.0
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.19.8
 	k8s.io/apimachinery v0.19.8
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/utils v0.0.0-20200729134348-d5654de09c73
-	knative.dev/pkg v0.0.0-20210107022335-51c72e24c179
+	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
+	knative.dev/pkg v0.0.0-20210127163530-0d31134d5f4e
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.19.8
