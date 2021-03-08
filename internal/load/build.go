@@ -63,7 +63,7 @@ func registerSingleBuild(kubeAccess KubeAccess, namespace string, name string, b
 	var buildRegisteredTime time.Time
 
 	for _, mf := range build.ManagedFields {
-		if mf.Operation == metav1.ManagedFieldsOperationUpdate && mf.Manager == "build-operator" {
+		if mf.Operation == metav1.ManagedFieldsOperationUpdate && mf.Manager == "shipwright-build-controller" {
 			buildRegisteredTime = mf.Time.Time
 		}
 	}
