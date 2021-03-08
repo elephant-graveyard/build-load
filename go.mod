@@ -10,7 +10,7 @@ require (
 	github.com/gonvenience/wrap v1.1.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/onsi/ginkgo v1.15.1
-	github.com/onsi/gomega v1.10.5
+	github.com/onsi/gomega v1.11.0
 	github.com/shipwright-io/build v0.3.1-0.20210305111301-3e3bf18672a3
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1
