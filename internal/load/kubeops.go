@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"strings"
 	"time"
 
 	buildv1alpha1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
@@ -32,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/neat"
 	"github.com/gonvenience/wrap"
 	"github.com/lucasb-eyer/go-colorful"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -295,6 +295,10 @@ func buildRunError(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) error
 			)
 		}
 
+		status, _ := neat.ToYAMLString(buildRun.Status)
+		bunt.Fprintf(&buf, "*BuildRun Status*\n%s\n\n", status)
+
+		bunt.Fprintf(&buf, "*Pod container logs*\n")
 		for _, container := range append(taskRunPod.Spec.InitContainers, taskRunPod.Spec.Containers...) {
 			containerName := colorise(container.Name)
 
@@ -314,9 +318,7 @@ func buildRunError(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) error
 
 				var scanner = bufio.NewScanner(reader)
 				for scanner.Scan() {
-					for _, line := range strings.Split(scanner.Text(), "\n") {
-						fmt.Fprintf(&buf, "%s %s\n", containerName, line)
-					}
+					fmt.Fprintf(&buf, "%s %s\n", containerName, scanner.Text())
 				}
 			}
 		}

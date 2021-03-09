@@ -43,28 +43,36 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		var headline = "Error occurred"
-		var code = 1
-		var buf bytes.Buffer
+		fmt.Fprint(os.Stderr, readableError(err))
+		os.Exit(1)
+	}
+}
 
-		switch terr := err.(type) {
-		case wrap.ContextError:
-			headline = fmt.Sprintf("Error: %s", terr.Context())
-			buf.WriteString(terr.Cause().Error())
+func readableError(err error) string {
+	var headline = "Error occurred"
+	var buf bytes.Buffer
 
-		default:
-			buf.WriteString(terr.Error())
+	switch terr := err.(type) {
+	case wrap.ContextError:
+		headline = fmt.Sprintf("Error: %s", terr.Context())
+		buf.WriteString(terr.Cause().Error())
+
+	case wrap.ListOfErrors:
+		headline = "Multiple errors occurred"
+		for _, e := range terr.Errors() {
+			buf.WriteString(readableError(e))
 		}
 
-		neat.Box(
-			os.Stderr,
-			headline,
-			&buf,
-			neat.HeadlineColor(bunt.Coral),
-		)
-
-		os.Exit(code)
+	default:
+		buf.WriteString(terr.Error())
 	}
+
+	return neat.ContentBox(
+		headline,
+		buf.String(),
+		neat.HeadlineColor(bunt.Coral),
+		neat.NoLineWrap(),
+	)
 }
 
 func init() {
