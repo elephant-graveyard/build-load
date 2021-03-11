@@ -225,7 +225,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 			buildRunResult = append(buildRunResult,
 				Value{
 					BuildrunControlTime,
-					duration(buildRun.Status.StartTime.Time, taskRun.Status.StartTime.Time),
+					duration(buildRun.CreationTimestamp.Time, taskRun.CreationTimestamp.Time),
 				},
 			)
 
