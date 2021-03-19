@@ -16,12 +16,11 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/tektoncd/pipeline v0.20.1
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
-	k8s.io/api v0.19.8
-	k8s.io/apimachinery v0.19.8
+	k8s.io/api v0.20.5
+	k8s.io/apimachinery v0.20.5
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/utils v0.0.0-20200729134348-d5654de09c73
 	knative.dev/pkg v0.0.0-20210107022335-51c72e24c179
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.19.8
-
