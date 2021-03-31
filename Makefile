@@ -15,7 +15,7 @@
 version := $(shell git describe --tags 2>/dev/null || (git rev-parse HEAD | cut -c-8))
 sources := $(wildcard cmd/*/*.go internal/*/*.go)
 goos := $(shell uname | tr '[:upper:]' '[:lower:]')
-goarch := $(shell uname -m | sed 's/x86_64/amd64/')
+goarch := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 
 .PHONY: all
 all: clean verify build
@@ -49,4 +49,12 @@ install: $(sources)
 		-tags netgo \
 		-ldflags='-s -w -extldflags "-static" -X github.com/homeport/build-load/internal/cmd.version=$(version)' \
 		-o /usr/local/bin/build-load \
+		cmd/build-load/main.go
+
+.PHONY: install-user
+install-user: $(sources)
+	@GO111MODULE=on CGO_ENABLED=0 GOOS=$(goos) GOARCH=$(goarch) go build \
+		-tags netgo \
+		-ldflags='-s -w -extldflags "-static" -X github.com/homeport/build-load/internal/cmd.version=$(version)' \
+		-o "${HOME}/bin/build-load" \
 		cmd/build-load/main.go
