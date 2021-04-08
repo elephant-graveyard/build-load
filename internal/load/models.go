@@ -182,7 +182,7 @@ func createBuildAnnotations(buildCfg BuildConfig) map[string]string {
 func createBuildSpec(name string, buildCfg BuildConfig) (*buildv1alpha.BuildSpec, error) {
 	var (
 		dockerfile = func() *string {
-			if strings.Contains(buildCfg.ClusterBuildStrategy, "kaniko") {
+			if strings.Contains(buildCfg.ClusterBuildStrategy, "kaniko") || strings.Contains(buildCfg.ClusterBuildStrategy, "buildkit") {
 				return &buildCfg.SourceDockerfile
 			}
 
