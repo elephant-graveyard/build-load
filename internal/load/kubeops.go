@@ -160,19 +160,35 @@ func deleteBuildRun(kubeAccess KubeAccess, namespace string, name string, delete
 	return err
 }
 
+func lookUpTimeout(kubeAccess KubeAccess, buildRun *buildv1alpha1.BuildRun) time.Duration {
+	if buildRun.Spec.Timeout != nil {
+		debug("Using BuildRun specified timeout of %v", buildRun.Spec.Timeout.Duration)
+		return buildRun.Spec.Timeout.Duration
+	}
+
+	if buildRun.Spec.BuildRef != nil {
+		build, err := kubeAccess.BuildClient.BuildV1alpha1().Builds(buildRun.Namespace).Get(kubeAccess.Context, buildRun.Spec.BuildRef.Name, metav1.GetOptions{})
+		if err == nil {
+			if build.Spec.Timeout != nil {
+				debug("Using Build specified timeout of %v", build.Spec.Timeout.Duration)
+				return build.Spec.Timeout.Duration
+			}
+		}
+	}
+
+	debug("Using default fallback timeout of %v", defaultBuildRunWaitTimeout)
+	return defaultBuildRunWaitTimeout
+}
+
 func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.BuildRun) (*buildv1alpha1.BuildRun, error) {
 	var (
-		timeout   = defaultBuildRunWaitTimeout
+		timeout   = lookUpTimeout(kubeAccess, buildRun)
 		interval  = 5 * time.Second
 		namespace = buildRun.Namespace
 		name      = buildRun.Name
 	)
 
-	if buildRun.Spec.Timeout != nil {
-		timeout = buildRun.Spec.Timeout.Duration
-	}
-
-	debug("Polling every %v to wait for completion of buildrun %s", interval, buildRun.Name)
+	debug("Polling every %v to wait for completion of buildrun %s within %v", interval, buildRun.Name, timeout)
 	err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
 		buildRun, err = kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
