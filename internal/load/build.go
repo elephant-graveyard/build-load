@@ -97,7 +97,7 @@ func waitForBuildRegistered(kubeAccess KubeAccess, build *buildv1alpha1.Build) (
 
 	debug("Polling every %v to wait for registration of build %s", interval, build.Name)
 	err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
-		build, err = kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Get(kubeAccess.Context, name, metav1.GetOptions{})
+		build, err = kubeAccess.BuildClient.ShipwrightV1alpha1().Builds(namespace).Get(kubeAccess.Context, name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}

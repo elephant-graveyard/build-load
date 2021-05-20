@@ -21,7 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
-	buildclient "github.com/shipwright-io/build/pkg/client/build/clientset/versioned"
+	buildclient "github.com/shipwright-io/build/pkg/client/clientset/versioned"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
 	"github.com/gonvenience/bunt"
