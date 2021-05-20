@@ -17,6 +17,7 @@ limitations under the License.
 package load
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -50,6 +51,7 @@ const (
 
 // KubeAccess contains Kubernetes cluster access objects in a single place
 type KubeAccess struct {
+	Context      context.Context
 	RestConfig   *rest.Config
 	Client       kubernetes.Interface
 	BuildClient  buildclient.Interface

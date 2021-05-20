@@ -17,6 +17,7 @@ limitations under the License.
 package load
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -82,6 +83,7 @@ func NewKubeAccess() (*KubeAccess, error) {
 	}
 
 	return &KubeAccess{
+		Context:      context.Background(),
 		RestConfig:   restConfig,
 		Client:       client,
 		BuildClient:  buildClient,

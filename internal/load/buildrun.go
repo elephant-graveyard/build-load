@@ -17,7 +17,6 @@ limitations under the License.
 package load
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -46,7 +45,7 @@ type BuildRunOption func(*buildRunOptions)
 // would put onto the system
 func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel int) error {
 	// Check whether the configured cluster build strategy is available
-	clusterBuildStrategy, err := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().Get(context.TODO(), buildCfg.ClusterBuildStrategy, metav1.GetOptions{})
+	clusterBuildStrategy, err := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().Get(kubeAccess.Context, buildCfg.ClusterBuildStrategy, metav1.GetOptions{})
 	if err != nil {
 		clusterBuildStrategy = nil
 
@@ -54,7 +53,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 		case *errors.StatusError:
 			switch terr.ErrStatus.Code {
 			case http.StatusNotFound:
-				if list, _ := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().List(context.TODO(), metav1.ListOptions{}); list != nil {
+				if list, _ := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().List(kubeAccess.Context, metav1.ListOptions{}); list != nil {
 					var names = make([]string, len(list.Items))
 					for i, entry := range list.Items {
 						names[i] = entry.GetName()
@@ -78,7 +77,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 
 	// Given that the permissions allow it, check how many buildruns are
 	// currently in the system already
-	if buildRunsResults, err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns("").List(context.TODO(), metav1.ListOptions{}); err == nil {
+	if buildRunsResults, err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns("").List(kubeAccess.Context, metav1.ListOptions{}); err == nil {
 		var (
 			totalBuildRuns     int
 			completedBuildRuns int
@@ -109,7 +108,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 		}
 	}
 
-	if nodesResults, err := kubeAccess.Client.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{}); err == nil {
+	if nodesResults, err := kubeAccess.Client.CoreV1().Nodes().List(kubeAccess.Context, metav1.ListOptions{}); err == nil {
 		var totalCPU int64
 		var totalMemory int64
 		for _, node := range nodesResults.Items {
