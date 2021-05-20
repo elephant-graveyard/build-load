@@ -45,7 +45,7 @@ type BuildRunOption func(*buildRunOptions)
 // would put onto the system
 func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel int) error {
 	// Check whether the configured cluster build strategy is available
-	clusterBuildStrategy, err := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().Get(kubeAccess.Context, buildCfg.ClusterBuildStrategy, metav1.GetOptions{})
+	clusterBuildStrategy, err := kubeAccess.BuildClient.ShipwrightV1alpha1().ClusterBuildStrategies().Get(kubeAccess.Context, buildCfg.ClusterBuildStrategy, metav1.GetOptions{})
 	if err != nil {
 		clusterBuildStrategy = nil
 
@@ -53,7 +53,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 		case *errors.StatusError:
 			switch terr.ErrStatus.Code {
 			case http.StatusNotFound:
-				if list, _ := kubeAccess.BuildClient.BuildV1alpha1().ClusterBuildStrategies().List(kubeAccess.Context, metav1.ListOptions{}); list != nil {
+				if list, _ := kubeAccess.BuildClient.ShipwrightV1alpha1().ClusterBuildStrategies().List(kubeAccess.Context, metav1.ListOptions{}); list != nil {
 					var names = make([]string, len(list.Items))
 					for i, entry := range list.Items {
 						names[i] = entry.GetName()
@@ -77,7 +77,7 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 
 	// Given that the permissions allow it, check how many buildruns are
 	// currently in the system already
-	if buildRunsResults, err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns("").List(kubeAccess.Context, metav1.ListOptions{}); err == nil {
+	if buildRunsResults, err := kubeAccess.BuildClient.ShipwrightV1alpha1().BuildRuns("").List(kubeAccess.Context, metav1.ListOptions{}); err == nil {
 		var (
 			totalBuildRuns     int
 			completedBuildRuns int
@@ -204,9 +204,9 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 
 	if !buildRunOptions.skipDelete {
 		defer func() {
-			debug("Delete container image %s", buildRun.Status.BuildSpec.Output.ImageURL)
-			if err := deleteContainerImage(kubeAccess, buildRun.Namespace, build.Spec.Output.SecretRef, buildRun.Status.BuildSpec.Output.ImageURL); err != nil {
-				warn("failed to delete image %s, %v\n", buildRun.Status.BuildSpec.Output.ImageURL, err)
+			debug("Delete container image %s", buildRun.Status.BuildSpec.Output.Image)
+			if err := deleteContainerImage(kubeAccess, buildRun.Namespace, build.Spec.Output.Credentials, buildRun.Status.BuildSpec.Output.Image); err != nil {
+				warn("failed to delete image %s, %v\n", buildRun.Status.BuildSpec.Output.Image, err)
 			}
 		}()
 	}
@@ -344,18 +344,18 @@ func ExecuteTestPlan(kubeAccess KubeAccess, testplan TestPlan) error {
 			i+1,
 			len(testplan.Steps),
 			step.Name,
-			step.BuildSpec.StrategyRef.Name,
+			step.BuildSpec.Strategy.Name,
 			step.BuildSpec.Source.URL,
 		)
 
 		name := fmt.Sprintf("test-plan-step-%s", step.Name)
 
-		outputImageURL, err := getOutputImageURL(name, step.BuildSpec.Output.ImageURL)
+		outputImageURL, err := getOutputImageURL(name, step.BuildSpec.Output.Image)
 		if err != nil {
 			return err
 		}
 
-		step.BuildSpec.Output.ImageURL = outputImageURL
+		step.BuildSpec.Output.Image = outputImageURL
 
 		if _, err := ExecuteSingleBuildRun(kubeAccess, testplan.Namespace, name, step.BuildSpec, step.BuildAnnotations, GenerateServiceAccount(testplan.GenerateServiceAccount)); err != nil {
 			return err

@@ -94,7 +94,7 @@ func applyBuild(kubeAccess KubeAccess, build buildv1alpha1.Build) (*buildv1alpha
 
 	debug("Create build %s", build.Name)
 	return kubeAccess.BuildClient.
-		BuildV1alpha1().
+		ShipwrightV1alpha1().
 		Builds(build.Namespace).
 		Create(kubeAccess.Context, &build, metav1.CreateOptions{})
 }
@@ -106,30 +106,30 @@ func applyBuildRun(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) (*bui
 
 	debug("Create buildrun %s", buildRun.Name)
 	return kubeAccess.BuildClient.
-		BuildV1alpha1().
+		ShipwrightV1alpha1().
 		BuildRuns(buildRun.Namespace).
 		Create(kubeAccess.Context, &buildRun, metav1.CreateOptions{})
 }
 
 func deleteBuild(kubeAccess KubeAccess, namespace string, name string, deleteOptions *metav1.DeleteOptions) error {
-	_, err := kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Get(kubeAccess.Context, name, metav1.GetOptions{})
+	_, err := kubeAccess.BuildClient.ShipwrightV1alpha1().Builds(namespace).Get(kubeAccess.Context, name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		return nil
 	}
 
 	debug("Delete build %s", name)
-	if err := kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Delete(kubeAccess.Context, name, *deleteOptions); err != nil {
+	if err := kubeAccess.BuildClient.ShipwrightV1alpha1().Builds(namespace).Delete(kubeAccess.Context, name, *deleteOptions); err != nil {
 		return err
 	}
 
 	return wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
-		_, err = kubeAccess.BuildClient.BuildV1alpha1().Builds(namespace).Get(kubeAccess.Context, name, metav1.GetOptions{})
+		_, err = kubeAccess.BuildClient.ShipwrightV1alpha1().Builds(namespace).Get(kubeAccess.Context, name, metav1.GetOptions{})
 		return errors.IsNotFound(err), nil
 	})
 }
 
 func deleteBuildRun(kubeAccess KubeAccess, namespace string, name string, deleteOptions *metav1.DeleteOptions) error {
-	buildRun, err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(kubeAccess.Context, name, metav1.GetOptions{})
+	buildRun, err := kubeAccess.BuildClient.ShipwrightV1alpha1().BuildRuns(namespace).Get(kubeAccess.Context, name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		return nil
 	}
@@ -137,12 +137,12 @@ func deleteBuildRun(kubeAccess KubeAccess, namespace string, name string, delete
 	_, pod := lookUpTaskRunAndPod(kubeAccess, *buildRun)
 
 	debug("Delete buildrun %s", name)
-	if err := kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Delete(kubeAccess.Context, name, *deleteOptions); err != nil {
+	if err := kubeAccess.BuildClient.ShipwrightV1alpha1().BuildRuns(namespace).Delete(kubeAccess.Context, name, *deleteOptions); err != nil {
 		return err
 	}
 
 	err = wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
-		_, err = kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(kubeAccess.Context, name, metav1.GetOptions{})
+		_, err = kubeAccess.BuildClient.ShipwrightV1alpha1().BuildRuns(namespace).Get(kubeAccess.Context, name, metav1.GetOptions{})
 		return errors.IsNotFound(err), nil
 	})
 
@@ -167,7 +167,7 @@ func lookUpTimeout(kubeAccess KubeAccess, buildRun *buildv1alpha1.BuildRun) time
 	}
 
 	if buildRun.Spec.BuildRef != nil {
-		build, err := kubeAccess.BuildClient.BuildV1alpha1().Builds(buildRun.Namespace).Get(kubeAccess.Context, buildRun.Spec.BuildRef.Name, metav1.GetOptions{})
+		build, err := kubeAccess.BuildClient.ShipwrightV1alpha1().Builds(buildRun.Namespace).Get(kubeAccess.Context, buildRun.Spec.BuildRef.Name, metav1.GetOptions{})
 		if err == nil {
 			if build.Spec.Timeout != nil {
 				debug("Using Build specified timeout of %v", build.Spec.Timeout.Duration)
@@ -190,12 +190,17 @@ func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.Bu
 
 	debug("Polling every %v to wait for completion of buildrun %s within %v", interval, buildRun.Name, timeout)
 	err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
-		buildRun, err = kubeAccess.BuildClient.BuildV1alpha1().BuildRuns(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		buildRun, err = kubeAccess.BuildClient.ShipwrightV1alpha1().BuildRuns(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
 
-		switch buildRun.Status.Succeeded {
+		var condition = buildRun.Status.GetCondition(buildv1alpha1.Succeeded)
+		if condition == nil {
+			return false, nil
+		}
+
+		switch condition.Status {
 		case corev1.ConditionTrue:
 			if buildRun.Status.CompletionTime != nil {
 				return true, nil
@@ -285,7 +290,13 @@ func lookUpDockerCredentialsFromSecret(kubeAccess KubeAccess, namespace string, 
 }
 
 func buildRunError(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) error {
-	if buildRun.Status.Succeeded == corev1.ConditionTrue {
+	var condition = buildRun.Status.GetCondition(buildv1alpha1.Succeeded)
+
+	if condition == nil {
+		return nil
+	}
+
+	if condition.Status == corev1.ConditionTrue {
 		return nil
 	}
 
@@ -348,7 +359,7 @@ func buildRunError(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) error
 
 	// default error with not much more details other than the status reason
 	return wrap.Errorf(
-		fmt.Errorf(buildRun.Status.Reason),
+		fmt.Errorf(condition.Reason),
 		"buildRun %s failed",
 		buildRun.Name,
 	)

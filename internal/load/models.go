@@ -26,7 +26,7 @@ import (
 	"time"
 
 	buildv1alpha "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
-	buildclient "github.com/shipwright-io/build/pkg/client/build/clientset/versioned"
+	buildclient "github.com/shipwright-io/build/pkg/client/clientset/versioned"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -212,23 +212,23 @@ func createBuildSpec(name string, buildCfg BuildConfig) (*buildv1alpha.BuildSpec
 	}
 
 	return &buildv1alpha.BuildSpec{
-		StrategyRef: &buildv1alpha.StrategyRef{
+		Strategy: &buildv1alpha.Strategy{
 			Name: buildCfg.ClusterBuildStrategy,
 			Kind: strategyRefKind(buildv1alpha.ClusterBuildStrategyKind),
 		},
 
-		Source: buildv1alpha.GitSource{
-			URL:        buildCfg.SourceURL,
-			Revision:   pointer.StringPtr(buildCfg.SourceRevision),
-			ContextDir: pointer.StringPtr(buildCfg.SourceContextDir),
-			SecretRef:  secrefRef(buildCfg.SourceSecretRef),
+		Source: buildv1alpha.Source{
+			URL:         buildCfg.SourceURL,
+			Revision:    pointer.StringPtr(buildCfg.SourceRevision),
+			ContextDir:  pointer.StringPtr(buildCfg.SourceContextDir),
+			Credentials: secrefRef(buildCfg.SourceSecretRef),
 		},
 
 		Dockerfile: dockerfile(),
 
 		Output: buildv1alpha.Image{
-			ImageURL:  outputImageURL,
-			SecretRef: secrefRef(buildCfg.OutputSecretRef),
+			Image:       outputImageURL,
+			Credentials: secrefRef(buildCfg.OutputSecretRef),
 		},
 
 		Timeout: func() *metav1.Duration {
