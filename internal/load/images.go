@@ -27,7 +27,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/dgrijalva/jwt-go"
+	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/gonvenience/wrap"
 )
 
