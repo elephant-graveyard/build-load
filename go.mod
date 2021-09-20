@@ -3,6 +3,9 @@ module github.com/homeport/build-load
 go 1.16
 
 require (
+	cloud.google.com/go/container v0.1.0 // indirect
+	cloud.google.com/go/monitoring v0.2.0 // indirect
+	cloud.google.com/go/trace v0.1.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.0.0
 	github.com/gonvenience/bunt v1.3.2
 	github.com/gonvenience/neat v1.3.6
@@ -13,7 +16,7 @@ require (
 	github.com/onsi/gomega v1.16.0
 	github.com/shipwright-io/build v0.5.2-0.20210830191632-04ff81c93dd5
 	github.com/spf13/cobra v1.2.1
-	github.com/spf13/viper v1.8.1
+	github.com/spf13/viper v1.9.0
 	github.com/tektoncd/pipeline v0.25.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/api v0.20.6
