@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/golang-jwt/jwt/v4 v4.0.0
 	github.com/gonvenience/bunt v1.3.2
-	github.com/gonvenience/neat v1.3.6
+	github.com/gonvenience/neat v1.3.7
 	github.com/gonvenience/text v1.0.6
 	github.com/gonvenience/wrap v1.1.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
