@@ -16,8 +16,8 @@ require (
 	github.com/spf13/viper v1.8.1
 	github.com/tektoncd/pipeline v0.25.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	k8s.io/api v0.20.6
-	k8s.io/apimachinery v0.20.6
+	k8s.io/api v0.22.2
+	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.20.6
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
 	knative.dev/pkg v0.0.0-20210331065221-952fdd90dbb0
