@@ -12,7 +12,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
 	github.com/shipwright-io/build v0.6.0
-	github.com/spf13/cobra v1.2.1
+	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.1
 	github.com/tektoncd/pipeline v0.27.3
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
