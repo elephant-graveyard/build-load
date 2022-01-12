@@ -6,12 +6,10 @@ builds:
     - linux
     - darwin
     goarch:
-    - amd64
     - arm64
+    - amd64
     main: ./cmd/build-load/main.go
     flags:
-    - -tags
-    - netgo
     - -trimpath
     ldflags:
     - -s -w -extldflags "-static" -X github.com/homeport/build-load/internal/cmd.version={{.Version}}
