@@ -1,0 +1,32 @@
+---
+name: Spell check
+
+on:
+  push:
+    tags-ignore:
+    - '**'
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+permissions:
+  contents: read
+
+jobs:
+  misspell:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17.x
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Install Tool
+      run: go install github.com/client9/misspell/cmd/misspell@latest
+
+    - run: find . -type f | xargs misspell -source=text -error

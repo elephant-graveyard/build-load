@@ -4,12 +4,12 @@ name: Build and Tests
 on:
   push:
     tags-ignore:
-      - '**'
+    - '**'
     branches:
-      - main
+    - main
   pull_request:
     branches:
-      - main
+    - main
 
 jobs:
   build:
@@ -32,24 +32,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
-    - name: Install Tools
-      run: |
-        go install github.com/gordonklaus/ineffassign@latest
-        go install golang.org/x/lint/golint@latest
-        go install github.com/client9/misspell/cmd/misspell@latest
-        go install honnef.co/go/tools/cmd/staticcheck@latest
-        go install github.com/onsi/ginkgo/ginkgo@latest
-
-    - run: go build ./...
-    - run: go vet ./...
-    - run: ineffassign ./...
-    - run: golint ./...
-    - run: find . -type f | xargs misspell -source=text -error
-    - run: staticcheck ./...
+    - name: Install Ginkgo
+      run: go install github.com/onsi/ginkgo/ginkgo@latest
 
     - name: Run Go Unit Tests
-      run: |
-        ginkgo -r -randomizeAllSpecs -randomizeSuites -failOnPending -nodes=4 -compilers=2 -race -trace -cover
+      run: ginkgo -r -randomizeAllSpecs -randomizeSuites -failOnPending -nodes=4 -compilers=2 -race -trace -cover
 
     - name: Upload Code Coverage Profile
       uses: codecov/codecov-action@v1
