@@ -188,9 +188,8 @@ func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.Bu
 		name      = buildRun.Name
 	)
 
-	debug("Polling every %v to wait for completion of buildrun %s within %v", interval, buildRun.Name, timeout)
-	err := wait.PollImmediate(interval, timeout, func() (done bool, err error) {
-		buildRun, err = kubeAccess.BuildClient.ShipwrightV1alpha1().BuildRuns(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	var conditionFunc = func() (done bool, err error) {
+		buildRun, err = kubeAccess.BuildClient.ShipwrightV1alpha1().BuildRuns(namespace).Get(kubeAccess.Context, name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -207,13 +206,18 @@ func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.Bu
 			}
 
 		case corev1.ConditionFalse:
-			return false, buildRunError(kubeAccess, *buildRun)
+			return false, fmt.Errorf(condition.Message)
 		}
 
 		return false, nil
-	})
+	}
 
-	return buildRun, err
+	debug("Polling every %v to wait for completion of buildrun %s within %v", interval, buildRun.Name, timeout)
+	if err := wait.PollImmediate(interval, timeout, conditionFunc); err != nil {
+		return buildRun, fmt.Errorf("%s\n\n%w", err.Error(), buildRunError(kubeAccess, *buildRun))
+	}
+
+	return buildRun, nil
 }
 
 func lookUpTaskRunAndPod(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) (taskRun *pipelinev1alpha1.TaskRun, taskRunPod *corev1.Pod) {
@@ -301,7 +305,6 @@ func buildRunError(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) error
 	}
 
 	if _, taskRunPod := lookUpTaskRunAndPod(kubeAccess, buildRun); taskRunPod != nil {
-		var buf bytes.Buffer
 		var colorise = func(s string) string {
 			var h = fnv.New32()
 			h.Write([]byte(s))
@@ -322,39 +325,46 @@ func buildRunError(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) error
 			)
 		}
 
+		var containerLogs = func() string {
+			var buf bytes.Buffer
+
+			for _, container := range append(taskRunPod.Spec.InitContainers, taskRunPod.Spec.Containers...) {
+				containerName := colorise(container.Name)
+
+				reader, err := kubeAccess.Client.
+					CoreV1().
+					RESTClient().
+					Get().
+					Namespace(taskRunPod.Namespace).
+					Name(taskRunPod.Name).
+					Resource("pods").
+					SubResource("log").
+					Param("container", container.Name).
+					Stream(kubeAccess.Context)
+
+				if err == nil {
+					defer reader.Close()
+
+					var scanner = bufio.NewScanner(reader)
+					for scanner.Scan() {
+						fmt.Fprintf(&buf, "%s %s\n", containerName, scanner.Text())
+					}
+				}
+			}
+
+			return buf.String()
+		}
+
+		var buf bytes.Buffer
+
 		status, _ := neat.ToYAMLString(buildRun.Status)
 		bunt.Fprintf(&buf, "*BuildRun Status*\n%s\n\n", status)
 
-		bunt.Fprintf(&buf, "*Pod container logs*\n")
-		for _, container := range append(taskRunPod.Spec.InitContainers, taskRunPod.Spec.Containers...) {
-			containerName := colorise(container.Name)
-
-			reader, err := kubeAccess.Client.
-				CoreV1().
-				RESTClient().
-				Get().
-				Namespace(taskRunPod.Namespace).
-				Name(taskRunPod.Name).
-				Resource("pods").
-				SubResource("log").
-				Param("container", container.Name).
-				Stream(kubeAccess.Context)
-
-			if err == nil {
-				defer reader.Close()
-
-				var scanner = bufio.NewScanner(reader)
-				for scanner.Scan() {
-					fmt.Fprintf(&buf, "%s %s\n", containerName, scanner.Text())
-				}
-			}
+		if logOutput := containerLogs(); logOutput != "" {
+			bunt.Fprintf(&buf, "*Pod container logs*\n%s\n\n", logOutput)
 		}
 
-		return wrap.Errorf(
-			fmt.Errorf(buf.String()),
-			"buildRun %s failed",
-			buildRun.Name,
-		)
+		return fmt.Errorf(buf.String())
 	}
 
 	// default error with not much more details other than the status reason
