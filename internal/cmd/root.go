@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/neat"
@@ -52,6 +53,11 @@ func readableError(err error) string {
 	var headline = "Error occurred"
 	var buf bytes.Buffer
 
+	type unwrapper interface {
+		Error() string
+		Unwrap() error
+	}
+
 	switch terr := err.(type) {
 	case wrap.ContextError:
 		headline = fmt.Sprintf("Error: %s", terr.Context())
@@ -62,6 +68,10 @@ func readableError(err error) string {
 		for _, e := range terr.Errors() {
 			buf.WriteString(readableError(e))
 		}
+
+	case unwrapper:
+		headline = strings.Split(terr.Error(), ":")[0]
+		buf.WriteString(terr.Unwrap().Error())
 
 	default:
 		buf.WriteString(terr.Error())
