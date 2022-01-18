@@ -199,7 +199,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 
 	buildRun, err = waitForBuildRunCompletion(kubeAccess, buildRun)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed while waiting for buildrun completion: %w", err)
 	}
 
 	if !buildRunOptions.skipDelete {
