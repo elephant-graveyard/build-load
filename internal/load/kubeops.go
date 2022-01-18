@@ -119,7 +119,7 @@ func deleteBuild(kubeAccess KubeAccess, namespace string, name string, deleteOpt
 
 	debug("Delete build %s", name)
 	if err := kubeAccess.BuildClient.ShipwrightV1alpha1().Builds(namespace).Delete(kubeAccess.Context, name, *deleteOptions); err != nil {
-		return err
+		return fmt.Errorf("failed to delete build %s: %w", name, err)
 	}
 
 	return wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
@@ -138,7 +138,7 @@ func deleteBuildRun(kubeAccess KubeAccess, namespace string, name string, delete
 
 	debug("Delete buildrun %s", name)
 	if err := kubeAccess.BuildClient.ShipwrightV1alpha1().BuildRuns(namespace).Delete(kubeAccess.Context, name, *deleteOptions); err != nil {
-		return err
+		return fmt.Errorf("failed to delete buildrun %s: %w", name, err)
 	}
 
 	err = wait.PollImmediate(1*time.Second, 10*time.Second, func() (done bool, err error) {
