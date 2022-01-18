@@ -85,8 +85,8 @@ func applyBuildRunSettingsFlags(cmd *cobra.Command, buildCfg *load.BuildConfig) 
 
 	pf.BoolVar(&buildCfg.SkipDelete, "skip-delete", false, "skip the clean-up of resources, which means no deletion of build, buildrun, and output image")
 
-	cobra.MarkFlagRequired(pf, "source-url")
-	cobra.MarkFlagRequired(pf, "output-image-url")
+	_ = cobra.MarkFlagRequired(pf, "source-url")
+	_ = cobra.MarkFlagRequired(pf, "output-image-url")
 }
 
 func store(filename string, f func(w io.Writer) error) error {
@@ -95,6 +95,9 @@ func store(filename string, f func(w io.Writer) error) error {
 	}
 
 	var buf bytes.Buffer
-	f(&buf)
+	if err := f(&buf); err != nil {
+		return err
+	}
+
 	return ioutil.WriteFile(filename, buf.Bytes(), os.FileMode(0644))
 }

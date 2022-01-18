@@ -102,7 +102,7 @@ func init() {
 	buildRunTestplanCmd.Flags().BoolVar(&buildRunTestplanCmdSettings.generateServiceAccount, "generate-service-account", true, "generate service account for build")
 	buildRunTestplanCmd.Flags().StringVar(&buildRunTestplanCmdSettings.testplanPath, "testplan", "", "testplan configuration file")
 
-	cobra.MarkFlagRequired(buildRunTestplanCmd.Flags(), "testplan")
+	_ = cobra.MarkFlagRequired(buildRunTestplanCmd.Flags(), "testplan")
 }
 
 func loadTestPlan(path string) (*load.TestPlan, error) {
