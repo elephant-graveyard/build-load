@@ -56,13 +56,13 @@ var buildRunOnceCmd = &cobra.Command{
 			return err
 		}
 
-		store(buildRunOnceCmdSettings.htmlOutput, func(w io.Writer) error {
-			return load.CreateBuildrunResultsChartJS(buildRunResults, w)
-		})
+		if err := store(buildRunOnceCmdSettings.htmlOutput, func(w io.Writer) error { return load.CreateBuildrunResultsChartJS(buildRunResults, w) }); err != nil {
+			return err
+		}
 
-		store(buildRunOnceCmdSettings.csvOutput, func(w io.Writer) error {
-			return load.CreateResultsCSV(buildRunResults, w)
-		})
+		if err := store(buildRunOnceCmdSettings.csvOutput, func(w io.Writer) error { return load.CreateResultsCSV(buildRunResults, w) }); err != nil {
+			return err
+		}
 
 		fmt.Print(load.CalculateResultSet(buildRunResults, "buildrun"))
 

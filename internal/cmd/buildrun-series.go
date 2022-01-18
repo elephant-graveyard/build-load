@@ -74,13 +74,13 @@ var buildRunSeriesCmd = &cobra.Command{
 			return err
 		}
 
-		store(buildRunSeriesCmdSettings.htmlOutput, func(w io.Writer) error {
-			return load.CreateChartJS(results, w)
-		})
+		if err := store(buildRunSeriesCmdSettings.htmlOutput, func(w io.Writer) error { return load.CreateChartJS(results, w) }); err != nil {
+			return err
+		}
 
-		store(buildRunSeriesCmdSettings.csvOutput, func(w io.Writer) error {
-			return load.CreateResultSetCSV(results, w)
-		})
+		if err := store(buildRunSeriesCmdSettings.csvOutput, func(w io.Writer) error { return load.CreateResultSetCSV(results, w) }); err != nil {
+			return err
+		}
 
 		return nil
 	},
