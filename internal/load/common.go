@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"time"
 
 	buildclient "github.com/shipwright-io/build/pkg/client/clientset/versioned"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
@@ -117,6 +118,9 @@ func warn(format string, a ...interface{}) {
 
 func debug(format string, a ...interface{}) {
 	if Debug {
-		bunt.Printf("DimGray{*Debug:*} %s\n", bunt.Sprintf(format, a...))
+		bunt.Printf("_[%s]_ DimGray{*Debug:*} %s\n",
+			time.Now().Format("2006-01-02 15:04:05"),
+			bunt.Sprintf(format, a...),
+		)
 	}
 }
