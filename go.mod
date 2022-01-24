@@ -10,7 +10,7 @@ require (
 	github.com/gonvenience/wrap v1.1.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.17.0
+	github.com/onsi/gomega v1.18.0
 	github.com/shipwright-io/build v0.7.0
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.1
@@ -90,7 +90,7 @@ require (
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20211210111614-af8b64212486 // indirect
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	golang.org/x/term v0.0.0-20210916214954-140adaaadfaf // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
