@@ -6,11 +6,11 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/gonvenience/bunt v1.3.2
 	github.com/gonvenience/neat v1.3.7
-	github.com/gonvenience/text v1.0.6
+	github.com/gonvenience/text v1.0.7
 	github.com/gonvenience/wrap v1.1.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.17.0
+	github.com/onsi/gomega v1.18.0
 	github.com/shipwright-io/build v0.8.0
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.1
