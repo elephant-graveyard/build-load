@@ -5,12 +5,12 @@ go 1.17
 require (
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/gonvenience/bunt v1.3.2
-	github.com/gonvenience/neat v1.3.7
+	github.com/gonvenience/neat v1.3.8
 	github.com/gonvenience/text v1.0.6
 	github.com/gonvenience/wrap v1.1.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.17.0
+	github.com/onsi/gomega v1.18.0
 	github.com/shipwright-io/build v0.8.0
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.1
@@ -87,7 +87,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.20.0 // indirect
-	golang.org/x/net v0.0.0-20220111093109-d55c255bac03 // indirect
+	golang.org/x/net v0.0.0-20220121210141-e204ce36a2ba // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
