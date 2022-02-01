@@ -29,4 +29,4 @@ jobs:
     - name: Install Tool
       run: go install github.com/client9/misspell/cmd/misspell@latest
 
-    - run: find . -type f | xargs misspell -source=text -error
+    - run: find . -type f | grep -v go.sum | xargs misspell -source=text -error
