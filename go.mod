@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/gonvenience/bunt v1.3.3
-	github.com/gonvenience/neat v1.3.8
+	github.com/gonvenience/neat v1.3.9
 	github.com/gonvenience/text v1.0.7
 	github.com/gonvenience/wrap v1.1.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
@@ -42,7 +42,6 @@ require (
 	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
-	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-openapi/swag v0.21.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -55,7 +54,6 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
