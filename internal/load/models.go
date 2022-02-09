@@ -72,7 +72,7 @@ type BuildConfig struct {
 	SourceContextDir           string
 	SourceSecretRef            string
 	SourceDockerfile           string
-	GenerateServiceAccount     bool
+	ServiceAccountName         string
 	OutputImageURL             string
 	OutputSecretRef            string
 	Timeout                    time.Duration
@@ -104,9 +104,9 @@ type Result []Value
 
 // TestPlan is a plan with steps that define tests
 type TestPlan struct {
-	Namespace              string `yaml:"namespace" json:"namespace"`
-	GenerateServiceAccount bool   `yaml:"generateServiceAccount" json:"generateServiceAccount"`
-	Steps                  []struct {
+	Namespace          string `yaml:"namespace" json:"namespace"`
+	ServiceAccountName string `yaml:"serviceAccountName" json:"serviceAccountName"`
+	Steps              []struct {
 		Name             string                 `yaml:"name" json:"name"`
 		BuildAnnotations map[string]string      `yaml:"buildAnnotations" json:"buildAnnotations"`
 		BuildSpec        buildv1alpha.BuildSpec `yaml:"buildSpec" json:"buildSpec"`

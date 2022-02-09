@@ -33,8 +33,8 @@ import (
 )
 
 type buildRunOptions struct {
-	generateServiceAccount bool
-	skipDelete             bool
+	serviceAccountName string
+	skipDelete         bool
 }
 
 // BuildRunOption specifies optional settings for a buildrun
@@ -150,10 +150,10 @@ func CheckSystemAndConfig(kubeAccess KubeAccess, buildCfg BuildConfig, parallel 
 	return nil
 }
 
-// GenerateServiceAccount sets whether or not a service account is created for the buildrun
-func GenerateServiceAccount(value bool) BuildRunOption {
+// ServiceAccountName sets the service account to be used, use empty string to generate one
+func ServiceAccountName(value string) BuildRunOption {
 	return func(o *buildRunOptions) {
-		o.generateServiceAccount = value
+		o.serviceAccountName = value
 	}
 }
 
@@ -184,7 +184,7 @@ func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string,
 		}()
 	}
 
-	buildRun, err := applyBuildRun(kubeAccess, newBuildRun(name, *build, buildRunOptions.generateServiceAccount))
+	buildRun, err := applyBuildRun(kubeAccess, newBuildRun(name, *build, buildRunOptions.serviceAccountName))
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +296,7 @@ func ExecuteParallelBuildRuns(kubeAccess KubeAccess, namingCfg NamingConfig, bui
 				name,
 				*buildSpec,
 				buildAnnotations,
-				GenerateServiceAccount(buildCfg.GenerateServiceAccount),
+				ServiceAccountName(buildCfg.ServiceAccountName),
 				SkipDelete(buildCfg.SkipDelete),
 			)
 
@@ -357,7 +357,7 @@ func ExecuteTestPlan(kubeAccess KubeAccess, testplan TestPlan) error {
 
 		step.BuildSpec.Output.Image = outputImageURL
 
-		if _, err := ExecuteSingleBuildRun(kubeAccess, testplan.Namespace, name, step.BuildSpec, step.BuildAnnotations, GenerateServiceAccount(testplan.GenerateServiceAccount)); err != nil {
+		if _, err := ExecuteSingleBuildRun(kubeAccess, testplan.Namespace, name, step.BuildSpec, step.BuildAnnotations, ServiceAccountName(testplan.ServiceAccountName)); err != nil {
 			return err
 		}
 	}
