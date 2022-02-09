@@ -144,7 +144,7 @@ func ExecuteBuilds(kubeAccess KubeAccess, namingCfg NamingConfig, buildCfg Build
 				name,
 				*buildSpec,
 				buildAnnotations,
-				GenerateServiceAccount(buildCfg.GenerateServiceAccount),
+				ServiceAccountName(buildCfg.ServiceAccountName),
 				SkipDelete(buildCfg.SkipDelete),
 			)
 
