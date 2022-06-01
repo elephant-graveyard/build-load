@@ -29,6 +29,7 @@ import (
 	pipelinev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/neat"
@@ -83,7 +84,7 @@ func newBuildRun(name string, build buildv1alpha1.Build, serviceAccountName stri
 			ServiceAccount: func() *buildv1alpha1.ServiceAccount {
 				if serviceAccountName == "generated" {
 					return &buildv1alpha1.ServiceAccount{
-						Generate: true,
+						Generate: pointer.Bool(true),
 					}
 				}
 
