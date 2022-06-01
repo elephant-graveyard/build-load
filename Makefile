@@ -18,43 +18,49 @@ goos := $(shell uname | tr '[:upper:]' '[:lower:]')
 goarch := $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 
 .PHONY: all
-all: clean verify build
+all: verify build
 
 .PHONY: clean
 clean:
-	@GO111MODULE=on go clean -cache $(shell go list ./...)
+	@go clean -cache $(shell go list ./...)
 	@rm -rf dist
 
 .PHONY: verify
 verify:
-	@GO111MODULE=on go mod download
-	@GO111MODULE=on go mod verify
+	@go mod download
+	@go mod verify
 
 .PHONY: test
 test: $(sources)
-	@GO111MODULE=on ginkgo \
+	@ginkgo \
 		-r \
-		-randomizeAllSpecs \
-		-randomizeSuites \
-		-failOnPending \
-		-trace \
-		-race \
-		-nodes=4 \
-		-compilers=2 \
-		-cover
+		-p \
+		--randomize-all \
+		--randomize-suites \
+		--fail-on-pending \
+		--nodes=4 \
+		--compilers=2 \
+		--slow-spec-threshold=2m \
+		--race \
+		--trace \
+		--cover
+
+.PHONY: build
+build: $(sources)
+	@go build ./...
 
 .PHONY: install
 install: $(sources)
-	@GO111MODULE=on CGO_ENABLED=0 GOOS=$(goos) GOARCH=$(goarch) go build \
-		-tags netgo \
+	@CGO_ENABLED=0 GOOS=$(goos) GOARCH=$(goarch) go build \
+		-trimpath \
 		-ldflags='-s -w -extldflags "-static" -X github.com/homeport/build-load/internal/cmd.version=$(version)' \
 		-o /usr/local/bin/build-load \
 		cmd/build-load/main.go
 
 .PHONY: install-user
 install-user: $(sources)
-	@GO111MODULE=on CGO_ENABLED=0 GOOS=$(goos) GOARCH=$(goarch) go build \
-		-tags netgo \
+	@CGO_ENABLED=0 GOOS=$(goos) GOARCH=$(goarch) go build \
+		-trimpath \
 		-ldflags='-s -w -extldflags "-static" -X github.com/homeport/build-load/internal/cmd.version=$(version)' \
 		-o "${HOME}/bin/build-load" \
 		cmd/build-load/main.go

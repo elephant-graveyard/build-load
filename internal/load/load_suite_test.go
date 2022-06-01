@@ -19,7 +19,7 @@ package load_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -33,5 +33,5 @@ const (
 
 func TestLoad(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "pkg/load")
+	RunSpecs(t, "Load Suite")
 }
