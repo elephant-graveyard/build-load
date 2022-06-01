@@ -345,7 +345,7 @@ func ExecuteTestPlan(kubeAccess KubeAccess, testplan TestPlan) error {
 			len(testplan.Steps),
 			step.Name,
 			step.BuildSpec.Strategy.Name,
-			step.BuildSpec.Source.URL,
+			*step.BuildSpec.Source.URL,
 		)
 
 		name := fmt.Sprintf("test-plan-step-%s", step.Name)

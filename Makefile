@@ -32,18 +32,21 @@ verify:
 
 .PHONY: test
 test: $(sources)
-	@ginkgo \
-		-r \
-		-p \
-		--randomize-all \
-		--randomize-suites \
-		--fail-on-pending \
-		--nodes=4 \
-		--compilers=2 \
-		--slow-spec-threshold=2m \
-		--race \
-		--trace \
-		--cover
+	ginkgo \
+	  -r \
+	  -p \
+	  --vv \
+	  --randomize-all \
+	  --randomize-suites \
+	  --fail-on-pending \
+	  --nodes=1 \
+	  --compilers=1 \
+	  --slow-spec-threshold=5m \
+	  --race \
+	  --trace \
+	  --cover \
+	  --coverprofile=coverage.out \
+	  --covermode=atomic
 
 .PHONY: build
 build: $(sources)

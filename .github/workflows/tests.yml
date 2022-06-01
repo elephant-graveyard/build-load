@@ -1,5 +1,5 @@
 ---
-name: Build and Tests
+name: Tests
 
 on:
   push:
@@ -12,14 +12,22 @@ on:
     - main
 
 jobs:
-  build:
-    name: Build and Tests
+  tests:
+    name: Tests
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      max-parallel: 2
+      matrix:
+        kubernetes:
+        - v1.21.2
+
     steps:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.17.x
+        go-version: 1.18.x
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
@@ -32,11 +40,30 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
-    - name: Install Ginkgo
-      run: go install github.com/onsi/ginkgo/ginkgo@latest
+    - name: Install kubectl
+      uses: azure/setup-kubectl@v1
+      with:
+        version: ${{ matrix.kubernetes }}
 
-    - name: Run Go Unit Tests
-      run: ginkgo -r -randomizeAllSpecs -randomizeSuites -failOnPending -nodes=4 -compilers=2 -race -trace -cover
+    - name: Create KinD cluster
+      uses: helm/kind-action@v1.2.0
+      with:
+        version: v0.11.1
+        node_image: kindest/node:${{ matrix.kubernetes }}
+        cluster_name: kind
+        wait: 120s
+
+    - name: Install Tekton
+      run: hack/install-tekton.sh
+
+    - name: Install Shipwright
+      run: hack/install-shipwright.sh
+
+    - name: Install Ginkgo
+      run: go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@latest
+
+    - name: Run Tests
+      run: make test
 
     - name: Upload Code Coverage Profile
       uses: codecov/codecov-action@v1
