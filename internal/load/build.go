@@ -28,11 +28,11 @@ import (
 )
 
 func buildError(build buildv1alpha1.Build) error {
-	if build.Status.Registered == corev1.ConditionTrue {
+	if build.Status.Registered != nil && *build.Status.Registered == corev1.ConditionTrue {
 		return nil
 	}
 
-	return fmt.Errorf("build failed to register. Reason=%s. Message=%s", build.Status.Reason, build.Status.Message)
+	return fmt.Errorf("build failed to register. Reason=%v. Message=%v", build.Status.Reason, build.Status.Message)
 }
 
 func registerSingleBuild(kubeAccess KubeAccess, namespace string, name string, buildSpec buildv1alpha1.BuildSpec, buildAnnotations map[string]string, options ...BuildRunOption) (*Result, error) {
@@ -102,7 +102,11 @@ func waitForBuildRegistered(kubeAccess KubeAccess, build *buildv1alpha1.Build) (
 			return false, err
 		}
 
-		switch build.Status.Registered {
+		if build.Status.Registered == nil {
+			return false, nil
+		}
+
+		switch *build.Status.Registered {
 		case corev1.ConditionTrue:
 			return true, nil
 

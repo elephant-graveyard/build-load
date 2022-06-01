@@ -212,15 +212,15 @@ func createBuildSpec(name string, buildCfg BuildConfig) (*buildv1alpha.BuildSpec
 	}
 
 	return &buildv1alpha.BuildSpec{
-		Strategy: &buildv1alpha.Strategy{
+		Strategy: buildv1alpha.Strategy{
 			Name: buildCfg.ClusterBuildStrategy,
 			Kind: strategyRefKind(buildv1alpha.ClusterBuildStrategyKind),
 		},
 
 		Source: buildv1alpha.Source{
-			URL:         buildCfg.SourceURL,
-			Revision:    pointer.StringPtr(buildCfg.SourceRevision),
-			ContextDir:  pointer.StringPtr(buildCfg.SourceContextDir),
+			URL:         pointer.String(buildCfg.SourceURL),
+			Revision:    pointer.String(buildCfg.SourceRevision),
+			ContextDir:  pointer.String(buildCfg.SourceContextDir),
 			Credentials: secrefRef(buildCfg.SourceSecretRef),
 		},
 
