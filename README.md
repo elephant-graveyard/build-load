@@ -115,11 +115,13 @@ To promote a new version, create a new release in GitHub. This will trigger a bu
 As a pre-requisite, a [`semver` tool](https://github.com/fsaintjacques/semver-tool) and the [GitHub CLI](https://github.com/cli/cli) are suggested on your system, for example on macOS:
 
 - `semver` tool
+
   ```sh
   curl --silent --fail --location https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver --output /usr/local/bin/semver && chmod a+rx /usr/local/bin/semver
   ```
 
 - GitHub CLI
+
   ```sh
   brew install gh
   ```
