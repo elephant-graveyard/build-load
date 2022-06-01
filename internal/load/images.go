@@ -41,15 +41,6 @@ type ibmCloudIdentityToken struct {
 }
 
 func deleteContainerImage(kubeAccess KubeAccess, namespace string, secretRef *corev1.LocalObjectReference, imageURL string) error {
-	if secretRef == nil {
-		return fmt.Errorf("unable to delete image %s, because no secret reference with access credentials is configured", imageURL)
-	}
-
-	username, password, err := lookUpDockerCredentialsFromSecret(kubeAccess, namespace, secretRef)
-	if err != nil {
-		return err
-	}
-
 	host, org, repo, tag, err := parseImageURL(imageURL)
 	if err != nil {
 		return err
@@ -57,14 +48,31 @@ func deleteContainerImage(kubeAccess KubeAccess, namespace string, secretRef *co
 
 	switch {
 	case strings.Contains(host, "docker.io"):
-		token, err := dockerV2Login("hub.docker.com", username, password)
-		if err != nil {
-			return err
+		var token string
+		if secretRef != nil {
+			username, password, err := lookUpDockerCredentialsFromSecret(kubeAccess, namespace, secretRef)
+			if err != nil {
+				return err
+			}
+
+			token, err = dockerV2Login("hub.docker.com", username, password)
+			if err != nil {
+				return err
+			}
 		}
 
 		return dockerV2Delete("hub.docker.com", token, org, repo, tag)
 
 	case strings.Contains(host, "icr.io"):
+		if secretRef == nil {
+			return fmt.Errorf("unable to delete image %s, because no secret reference with access credentials is configured", imageURL)
+		}
+
+		username, password, err := lookUpDockerCredentialsFromSecret(kubeAccess, namespace, secretRef)
+		if err != nil {
+			return err
+		}
+
 		if username != "iamapikey" {
 			return fmt.Errorf("failed to delete image %s, because %s/%s does not contain an IBM API key", imageURL, namespace, secretRef)
 		}
@@ -152,7 +160,7 @@ func dockerV2Login(host string, username string, password string) (string, error
 			return "", err
 		}
 
-		return loginToken.Token, nil
+		return fmt.Sprintf("JWT %s", loginToken.Token), nil
 
 	default:
 		return "", fmt.Errorf(string(respData))
@@ -165,7 +173,9 @@ func dockerV2Delete(host string, token string, org string, repo string, tag stri
 		return err
 	}
 
-	req.Header.Set("Authorization", "JWT "+token)
+	if token != "" {
+		req.Header.Set("Authorization", token)
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
