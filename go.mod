@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/golang-jwt/jwt/v4 v4.4.1
 	github.com/gonvenience/bunt v1.3.3
-	github.com/gonvenience/neat v1.3.10
+	github.com/gonvenience/neat v1.3.11
 	github.com/gonvenience/text v1.0.7
 	github.com/gonvenience/wrap v1.1.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
@@ -15,7 +15,7 @@ require (
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.12.0
 	github.com/tektoncd/pipeline v0.32.1
-	gopkg.in/yaml.v3 v3.0.0
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.23.3
 	k8s.io/apimachinery v0.23.3
 	k8s.io/client-go v0.23.3
