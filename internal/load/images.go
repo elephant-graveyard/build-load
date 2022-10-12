@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -144,7 +144,7 @@ func dockerV2Login(host string, username string, password string) (string, error
 
 	defer resp.Body.Close()
 
-	respData, err := ioutil.ReadAll(resp.Body)
+	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -184,7 +184,7 @@ func dockerV2Delete(host string, token string, org string, repo string, tag stri
 
 	defer resp.Body.Close()
 
-	respData, err := ioutil.ReadAll(resp.Body)
+	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func getIBMCloudIdentityToken(apikey string) (*ibmCloudIdentityToken, error) {
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func icrDelete(identityToken ibmCloudIdentityToken, accountID string, imageName 
 
 	defer resp.Body.Close()
 
-	msg, err := ioutil.ReadAll(resp.Body)
+	msg, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}

@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"time"
 
@@ -138,7 +137,7 @@ func (brr Result) ValueOf(description string) time.Duration {
 
 // NewTestPlan creates a test plan based on the provided input
 func NewTestPlan(in io.Reader) (*TestPlan, error) {
-	data, err := ioutil.ReadAll(in)
+	data, err := io.ReadAll(in)
 	if err != nil {
 		return nil, err
 	}
