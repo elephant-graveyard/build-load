@@ -42,6 +42,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
+    - name: Build source files
+      run: go build ./...
+
     - name: Install kubectl
       uses: azure/setup-kubectl@v1
       with:
@@ -61,11 +64,10 @@ jobs:
     - name: Install Shipwright
       run: hack/install-shipwright.sh
 
-    - name: Install Ginkgo
-      run: go install github.com/onsi/ginkgo/v2/ginkgo@v2.2.0
-
     - name: Run Tests
-      run: make test
+      run: |
+        go install github.com/onsi/ginkgo/v2/ginkgo
+        make test
 
     - name: Upload Code Coverage Profile
       uses: codecov/codecov-action@v1
