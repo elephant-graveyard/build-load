@@ -25,30 +25,31 @@ import (
 	"hash/fnv"
 	"time"
 
-	buildv1alpha1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
-	pipelinev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
+
+	shipwrightBuild "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
+	tektonPipline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
 	"github.com/gonvenience/bunt"
 	"github.com/gonvenience/neat"
 	"github.com/gonvenience/wrap"
 	"github.com/lucasb-eyer/go-colorful"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"knative.dev/pkg/ptr"
 )
 
 var (
 	defaultBuildRunWaitTimeout = time.Duration(5 * time.Minute)
 	defaultDeleteOptions       = &metav1.DeleteOptions{
-		GracePeriodSeconds: ptr.Int64(0),
+		GracePeriodSeconds: p(int64(0)),
 	}
 )
 
-func newBuild(namespace string, name string, buildSpec buildv1alpha1.BuildSpec, annotations map[string]string) buildv1alpha1.Build {
-	return buildv1alpha1.Build{
+func newBuild(namespace string, name string, buildSpec shipwrightBuild.BuildSpec, annotations map[string]string) shipwrightBuild.Build {
+	return shipwrightBuild.Build{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Build",
 			APIVersion: "build.dev/v1alpha1",
@@ -64,8 +65,8 @@ func newBuild(namespace string, name string, buildSpec buildv1alpha1.BuildSpec, 
 	}
 }
 
-func newBuildRun(name string, build buildv1alpha1.Build, serviceAccountName string) buildv1alpha1.BuildRun {
-	return buildv1alpha1.BuildRun{
+func newBuildRun(name string, build shipwrightBuild.Build, serviceAccountName string) shipwrightBuild.BuildRun {
+	return shipwrightBuild.BuildRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "BuildRun",
 			APIVersion: "build.dev/v1alpha1",
@@ -76,20 +77,20 @@ func newBuildRun(name string, build buildv1alpha1.Build, serviceAccountName stri
 			Namespace: build.Namespace,
 		},
 
-		Spec: buildv1alpha1.BuildRunSpec{
-			BuildRef: &buildv1alpha1.BuildRef{
+		Spec: shipwrightBuild.BuildRunSpec{
+			BuildRef: &shipwrightBuild.BuildRef{
 				Name: build.Name,
 			},
 
-			ServiceAccount: func() *buildv1alpha1.ServiceAccount {
+			ServiceAccount: func() *shipwrightBuild.ServiceAccount {
 				if serviceAccountName == "generated" {
-					return &buildv1alpha1.ServiceAccount{
+					return &shipwrightBuild.ServiceAccount{
 						Generate: pointer.Bool(true),
 					}
 				}
 
 				if serviceAccountName != "" {
-					return &buildv1alpha1.ServiceAccount{
+					return &shipwrightBuild.ServiceAccount{
 						Name: &serviceAccountName,
 					}
 				}
@@ -100,7 +101,7 @@ func newBuildRun(name string, build buildv1alpha1.Build, serviceAccountName stri
 	}
 }
 
-func applyBuild(kubeAccess KubeAccess, build buildv1alpha1.Build) (*buildv1alpha1.Build, error) {
+func applyBuild(kubeAccess KubeAccess, build shipwrightBuild.Build) (*shipwrightBuild.Build, error) {
 	if err := deleteBuild(kubeAccess, build.Namespace, build.Name, defaultDeleteOptions); err != nil {
 		return nil, err
 	}
@@ -112,7 +113,7 @@ func applyBuild(kubeAccess KubeAccess, build buildv1alpha1.Build) (*buildv1alpha
 		Create(kubeAccess.Context, &build, metav1.CreateOptions{})
 }
 
-func applyBuildRun(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) (*buildv1alpha1.BuildRun, error) {
+func applyBuildRun(kubeAccess KubeAccess, buildRun shipwrightBuild.BuildRun) (*shipwrightBuild.BuildRun, error) {
 	if err := deleteBuildRun(kubeAccess, buildRun.Namespace, buildRun.Name, defaultDeleteOptions); err != nil {
 		return nil, err
 	}
@@ -173,7 +174,7 @@ func deleteBuildRun(kubeAccess KubeAccess, namespace string, name string, delete
 	return err
 }
 
-func lookUpTimeout(kubeAccess KubeAccess, buildRun *buildv1alpha1.BuildRun) time.Duration {
+func lookUpTimeout(kubeAccess KubeAccess, buildRun *shipwrightBuild.BuildRun) time.Duration {
 	if buildRun.Spec.Timeout != nil {
 		debug("Using BuildRun specified timeout of %v", buildRun.Spec.Timeout.Duration)
 		return buildRun.Spec.Timeout.Duration
@@ -193,7 +194,7 @@ func lookUpTimeout(kubeAccess KubeAccess, buildRun *buildv1alpha1.BuildRun) time
 	return defaultBuildRunWaitTimeout
 }
 
-func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.BuildRun) (*buildv1alpha1.BuildRun, error) {
+func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *shipwrightBuild.BuildRun) (*shipwrightBuild.BuildRun, error) {
 	var (
 		timeout   = lookUpTimeout(kubeAccess, buildRun)
 		interval  = 5 * time.Second
@@ -207,7 +208,7 @@ func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.Bu
 			return false, err
 		}
 
-		var condition = buildRun.Status.GetCondition(buildv1alpha1.Succeeded)
+		var condition = buildRun.Status.GetCondition(shipwrightBuild.Succeeded)
 		if condition == nil {
 			return false, nil
 		}
@@ -233,10 +234,10 @@ func waitForBuildRunCompletion(kubeAccess KubeAccess, buildRun *buildv1alpha1.Bu
 	return buildRun, nil
 }
 
-func lookUpTaskRunAndPod(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) (taskRun *pipelinev1alpha1.TaskRun, taskRunPod *corev1.Pod) {
+func lookUpTaskRunAndPod(kubeAccess KubeAccess, buildRun shipwrightBuild.BuildRun) (taskRun *tektonPipline.TaskRun, taskRunPod *corev1.Pod) {
 	if buildRun.Status.LatestTaskRunRef != nil {
 		tmp, err := kubeAccess.TektonClient.
-			TektonV1alpha1().
+			TektonV1beta1().
 			TaskRuns(buildRun.Namespace).
 			Get(context.TODO(), *buildRun.Status.LatestTaskRunRef, metav1.GetOptions{})
 
@@ -306,8 +307,8 @@ func lookUpDockerCredentialsFromSecret(kubeAccess KubeAccess, namespace string, 
 	return "", "", fmt.Errorf("failed to find authentication credentials in secret data")
 }
 
-func buildRunError(kubeAccess KubeAccess, buildRun buildv1alpha1.BuildRun) error {
-	var condition = buildRun.Status.GetCondition(buildv1alpha1.Succeeded)
+func buildRunError(kubeAccess KubeAccess, buildRun shipwrightBuild.BuildRun) error {
+	var condition = buildRun.Status.GetCondition(shipwrightBuild.Succeeded)
 
 	if condition == nil {
 		return nil
