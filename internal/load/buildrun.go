@@ -23,13 +23,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gonvenience/bunt"
-	"github.com/gonvenience/text"
-	buildv1alpha1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	shipwrightBuild "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
+
+	"github.com/gonvenience/bunt"
+	"github.com/gonvenience/text"
 )
 
 type buildRunOptions struct {
@@ -165,7 +168,7 @@ func SkipDelete(value bool) BuildRunOption {
 }
 
 // ExecuteSingleBuildRun executes a single buildrun based on the given settings
-func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string, buildSpec buildv1alpha1.BuildSpec, buildAnnotations map[string]string, options ...BuildRunOption) (*Result, error) {
+func ExecuteSingleBuildRun(kubeAccess KubeAccess, namespace string, name string, buildSpec shipwrightBuild.BuildSpec, buildAnnotations map[string]string, options ...BuildRunOption) (*Result, error) {
 	var buildRunOptions = buildRunOptions{}
 	for _, option := range options {
 		option(&buildRunOptions)
@@ -365,7 +368,7 @@ func ExecuteTestPlan(kubeAccess KubeAccess, testplan TestPlan) error {
 	return nil
 }
 
-func estimateResourceRequests(clusterBuildStrategy buildv1alpha1.ClusterBuildStrategy, concurrent int64) corev1.ResourceList {
+func estimateResourceRequests(clusterBuildStrategy shipwrightBuild.ClusterBuildStrategy, concurrent int64) corev1.ResourceList {
 	var (
 		maxCPU *resource.Quantity
 		maxMem *resource.Quantity

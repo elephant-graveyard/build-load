@@ -21,13 +21,15 @@ import (
 	"sync"
 	"time"
 
-	buildv1alpha1 "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	shipwrightBuild "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
 )
 
-func buildError(build buildv1alpha1.Build) error {
+func buildError(build shipwrightBuild.Build) error {
 	if build.Status.Registered != nil && *build.Status.Registered == corev1.ConditionTrue {
 		return nil
 	}
@@ -35,7 +37,7 @@ func buildError(build buildv1alpha1.Build) error {
 	return fmt.Errorf("build failed to register. Reason=%v. Message=%v", build.Status.Reason, build.Status.Message)
 }
 
-func registerSingleBuild(kubeAccess KubeAccess, namespace string, name string, buildSpec buildv1alpha1.BuildSpec, buildAnnotations map[string]string, options ...BuildRunOption) (*Result, error) {
+func registerSingleBuild(kubeAccess KubeAccess, namespace string, name string, buildSpec shipwrightBuild.BuildSpec, buildAnnotations map[string]string, options ...BuildRunOption) (*Result, error) {
 	var buildRunOptions = buildRunOptions{}
 	for _, option := range options {
 		option(&buildRunOptions)
@@ -87,7 +89,7 @@ func registerSingleBuild(kubeAccess KubeAccess, namespace string, name string, b
 	return &buildResult, nil
 }
 
-func waitForBuildRegistered(kubeAccess KubeAccess, build *buildv1alpha1.Build) (*buildv1alpha1.Build, error) {
+func waitForBuildRegistered(kubeAccess KubeAccess, build *shipwrightBuild.Build) (*shipwrightBuild.Build, error) {
 	var (
 		timeout   = defaultBuildRunWaitTimeout
 		interval  = 5 * time.Second

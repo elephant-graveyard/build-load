@@ -26,16 +26,15 @@ import (
 
 	. "github.com/homeport/build-load/internal/load"
 
-	core "k8s.io/api/core/v1"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/util/rand"
 
-	build "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
+	shipwrightBuild "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
 )
 
-func ptr[T any](t T) *T {
-	return &t
-}
+func p[T any](t T) *T { return &t }
 
 var _ = Describe("Kubernetes cluster based tests", func() {
 	var kubeAccess *KubeAccess
@@ -45,10 +44,10 @@ var _ = Describe("Kubernetes cluster based tests", func() {
 
 		namespace, err := kubeAccess.Client.CoreV1().Namespaces().Create(
 			kubeAccess.Context,
-			&core.Namespace{
-				ObjectMeta: meta.ObjectMeta{Name: name},
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{Name: name},
 			},
-			meta.CreateOptions{},
+			metav1.CreateOptions{},
 		)
 
 		Expect(err).ToNot(HaveOccurred())
@@ -58,14 +57,14 @@ var _ = Describe("Kubernetes cluster based tests", func() {
 				Client.
 				CoreV1().
 				Namespaces().
-				Delete(kubeAccess.Context, name, meta.DeleteOptions{}),
+				Delete(kubeAccess.Context, name, metav1.DeleteOptions{}),
 			).To(Succeed())
 		}()
 
 		f(name)
 	}
 
-	var withTemporaryClusterBuildStrategy = func(f func(build.ClusterBuildStrategy)) {
+	var withTemporaryClusterBuildStrategy = func(f func(shipwrightBuild.ClusterBuildStrategy)) {
 		name := rand.String(8)
 
 		cbs, err := kubeAccess.BuildClient.
@@ -73,14 +72,14 @@ var _ = Describe("Kubernetes cluster based tests", func() {
 			ClusterBuildStrategies().
 			Create(
 				kubeAccess.Context,
-				&build.ClusterBuildStrategy{
-					ObjectMeta: meta.ObjectMeta{
+				&shipwrightBuild.ClusterBuildStrategy{
+					ObjectMeta: metav1.ObjectMeta{
 						Name: name,
 					},
-					Spec: build.BuildStrategySpec{
-						BuildSteps: []build.BuildStep{
+					Spec: shipwrightBuild.BuildStrategySpec{
+						BuildSteps: []shipwrightBuild.BuildStep{
 							{
-								Container: core.Container{
+								Container: corev1.Container{
 									Name:    "no-op",
 									Image:   "alpine:latest",
 									Command: []string{"/bin/true"},
@@ -89,7 +88,7 @@ var _ = Describe("Kubernetes cluster based tests", func() {
 						},
 					},
 				},
-				meta.CreateOptions{},
+				metav1.CreateOptions{},
 			)
 
 		Expect(err).ToNot(HaveOccurred())
@@ -99,7 +98,7 @@ var _ = Describe("Kubernetes cluster based tests", func() {
 				BuildClient.
 				ShipwrightV1alpha1().
 				ClusterBuildStrategies().
-				Delete(kubeAccess.Context, name, meta.DeleteOptions{}),
+				Delete(kubeAccess.Context, name, metav1.DeleteOptions{}),
 			).To(Succeed())
 		}()
 
@@ -127,7 +126,7 @@ var _ = Describe("Kubernetes cluster based tests", func() {
 	Context("using builds", func() {
 		It("should create builds in a system", func() {
 			withTemporaryNamespace(func(namespace string) {
-				withTemporaryClusterBuildStrategy(func(cbs build.ClusterBuildStrategy) {
+				withTemporaryClusterBuildStrategy(func(cbs shipwrightBuild.ClusterBuildStrategy) {
 					results, err := ExecuteBuilds(
 						*kubeAccess,
 						NamingConfig{
@@ -153,7 +152,7 @@ var _ = Describe("Kubernetes cluster based tests", func() {
 
 	Context("using buildruns", func() {
 		It("should check system and config to verify a buildrun would work", func() {
-			withTemporaryClusterBuildStrategy(func(cbs build.ClusterBuildStrategy) {
+			withTemporaryClusterBuildStrategy(func(cbs shipwrightBuild.ClusterBuildStrategy) {
 				Expect(CheckSystemAndConfig(
 					*kubeAccess,
 					BuildConfig{
@@ -170,7 +169,7 @@ var _ = Describe("Kubernetes cluster based tests", func() {
 
 		It("should execute a single buildrun using temporary strategy and the Go sample", func() {
 			withTemporaryNamespace(func(namespace string) {
-				withTemporaryClusterBuildStrategy(func(cbs build.ClusterBuildStrategy) {
+				withTemporaryClusterBuildStrategy(func(cbs shipwrightBuild.ClusterBuildStrategy) {
 					buildRunName := rand.String(8)
 					outputImageName := rand.String(8)
 
@@ -178,16 +177,16 @@ var _ = Describe("Kubernetes cluster based tests", func() {
 						*kubeAccess,
 						namespace,
 						buildRunName,
-						build.BuildSpec{
-							Source: build.Source{
-								URL: ptr("https://github.com/shipwright-io/sample-go"),
+						shipwrightBuild.BuildSpec{
+							Source: shipwrightBuild.Source{
+								URL: p("https://github.com/shipwright-io/sample-go"),
 							},
-							Dockerfile: ptr("Dockerfile"),
-							Strategy: build.Strategy{
-								Kind: ptr(build.ClusterBuildStrategyKind),
+							Dockerfile: p("Dockerfile"),
+							Strategy: shipwrightBuild.Strategy{
+								Kind: p(shipwrightBuild.ClusterBuildStrategyKind),
 								Name: cbs.Name,
 							},
-							Output: build.Image{
+							Output: shipwrightBuild.Image{
 								Image: fmt.Sprintf("registry.registry.svc.cluster.local:32222/test/%s", outputImageName),
 							},
 						},
@@ -202,7 +201,7 @@ var _ = Describe("Kubernetes cluster based tests", func() {
 
 		It("should execute parallel buildruns using temporary strategy and the Go sample", func() {
 			withTemporaryNamespace(func(namespace string) {
-				withTemporaryClusterBuildStrategy(func(cbs build.ClusterBuildStrategy) {
+				withTemporaryClusterBuildStrategy(func(cbs shipwrightBuild.ClusterBuildStrategy) {
 					results, err := ExecuteParallelBuildRuns(
 						*kubeAccess,
 						NamingConfig{
@@ -225,7 +224,7 @@ var _ = Describe("Kubernetes cluster based tests", func() {
 
 		It("should execute a series of buildruns using temporary strategy and the Go sample", func() {
 			withTemporaryNamespace(func(namespace string) {
-				withTemporaryClusterBuildStrategy(func(cbs build.ClusterBuildStrategy) {
+				withTemporaryClusterBuildStrategy(func(cbs shipwrightBuild.ClusterBuildStrategy) {
 					resultSet, err := ExecuteSeriesOfParallelBuildRuns(
 						*kubeAccess,
 						NamingConfig{
@@ -275,8 +274,8 @@ steps:
 `
 
 			withTemporaryNamespace(func(namespace string) {
-				withTemporaryClusterBuildStrategy(func(one build.ClusterBuildStrategy) {
-					withTemporaryClusterBuildStrategy(func(two build.ClusterBuildStrategy) {
+				withTemporaryClusterBuildStrategy(func(one shipwrightBuild.ClusterBuildStrategy) {
+					withTemporaryClusterBuildStrategy(func(two shipwrightBuild.ClusterBuildStrategy) {
 						testplan, err := NewTestPlan(strings.NewReader(fmt.Sprintf(testplanTemplate, namespace, one.Name, two.Name)))
 						Expect(err).ToNot(HaveOccurred())
 						Expect(testplan).ToNot(BeNil())

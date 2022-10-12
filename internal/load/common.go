@@ -34,6 +34,8 @@ import (
 // Debug enables or disables additional output
 var Debug bool
 
+func p[T any](t T) *T { return &t }
+
 func lookUpKubeConfigFilePath() (string, error) {
 	if value, present := os.LookupEnv("KUBECONFIG"); present {
 		return value, nil

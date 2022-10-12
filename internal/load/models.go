@@ -24,17 +24,20 @@ import (
 	"strings"
 	"time"
 
-	buildv1alpha "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
-	buildclient "github.com/shipwright-io/build/pkg/client/clientset/versioned"
-	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/gonvenience/bunt"
-	"gopkg.in/yaml.v3"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/pointer"
+
+	shipwrightBuild "github.com/shipwright-io/build/pkg/apis/build/v1alpha1"
+
+	buildclient "github.com/shipwright-io/build/pkg/client/clientset/versioned"
+	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+
+	"github.com/gonvenience/bunt"
+	"gopkg.in/yaml.v3"
 )
 
 // Naming constants for the results
@@ -106,9 +109,9 @@ type TestPlan struct {
 	Namespace          string `yaml:"namespace" json:"namespace"`
 	ServiceAccountName string `yaml:"serviceAccountName" json:"serviceAccountName"`
 	Steps              []struct {
-		Name             string                 `yaml:"name" json:"name"`
-		BuildAnnotations map[string]string      `yaml:"buildAnnotations" json:"buildAnnotations"`
-		BuildSpec        buildv1alpha.BuildSpec `yaml:"buildSpec" json:"buildSpec"`
+		Name             string                    `yaml:"name" json:"name"`
+		BuildAnnotations map[string]string         `yaml:"buildAnnotations" json:"buildAnnotations"`
+		BuildSpec        shipwrightBuild.BuildSpec `yaml:"buildSpec" json:"buildSpec"`
 	} `yaml:"steps" json:"steps"`
 }
 
@@ -173,14 +176,14 @@ func createNamespaceAndName(namingCfg NamingConfig, buildCfg BuildConfig, idx in
 func createBuildAnnotations(buildCfg BuildConfig) map[string]string {
 	if buildCfg.SkipVerifySourceRepository {
 		return map[string]string{
-			buildv1alpha.AnnotationBuildVerifyRepository: "false",
+			shipwrightBuild.AnnotationBuildVerifyRepository: "false",
 		}
 	}
 
 	return nil
 }
 
-func createBuildSpec(name string, buildCfg BuildConfig) (*buildv1alpha.BuildSpec, error) {
+func createBuildSpec(name string, buildCfg BuildConfig) (*shipwrightBuild.BuildSpec, error) {
 	var (
 		dockerfile = func() *string {
 			if strings.Contains(buildCfg.ClusterBuildStrategy, "kaniko") || strings.Contains(buildCfg.ClusterBuildStrategy, "buildkit") || strings.Contains(buildCfg.ClusterBuildStrategy, "dockerfile") {
@@ -190,7 +193,7 @@ func createBuildSpec(name string, buildCfg BuildConfig) (*buildv1alpha.BuildSpec
 			return nil
 		}
 
-		strategyRefKind = func(kind buildv1alpha.BuildStrategyKind) *buildv1alpha.BuildStrategyKind {
+		strategyRefKind = func(kind shipwrightBuild.BuildStrategyKind) *shipwrightBuild.BuildStrategyKind {
 			return &kind
 		}
 
@@ -210,13 +213,13 @@ func createBuildSpec(name string, buildCfg BuildConfig) (*buildv1alpha.BuildSpec
 		return nil, err
 	}
 
-	return &buildv1alpha.BuildSpec{
-		Strategy: buildv1alpha.Strategy{
+	return &shipwrightBuild.BuildSpec{
+		Strategy: shipwrightBuild.Strategy{
 			Name: buildCfg.ClusterBuildStrategy,
-			Kind: strategyRefKind(buildv1alpha.ClusterBuildStrategyKind),
+			Kind: strategyRefKind(shipwrightBuild.ClusterBuildStrategyKind),
 		},
 
-		Source: buildv1alpha.Source{
+		Source: shipwrightBuild.Source{
 			URL:         pointer.String(buildCfg.SourceURL),
 			Revision:    pointer.String(buildCfg.SourceRevision),
 			ContextDir:  pointer.String(buildCfg.SourceContextDir),
@@ -225,7 +228,7 @@ func createBuildSpec(name string, buildCfg BuildConfig) (*buildv1alpha.BuildSpec
 
 		Dockerfile: dockerfile(),
 
-		Output: buildv1alpha.Image{
+		Output: shipwrightBuild.Image{
 			Image:       outputImageURL,
 			Credentials: secrefRef(buildCfg.OutputSecretRef),
 		},
