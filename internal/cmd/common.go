@@ -19,7 +19,6 @@ package cmd
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -99,5 +98,5 @@ func store(filename string, f func(w io.Writer) error) error {
 		return err
 	}
 
-	return ioutil.WriteFile(filename, buf.Bytes(), os.FileMode(0644))
+	return os.WriteFile(filename, buf.Bytes(), os.FileMode(0644))
 }

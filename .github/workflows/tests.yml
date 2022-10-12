@@ -60,7 +60,7 @@ jobs:
       run: hack/install-shipwright.sh
 
     - name: Install Ginkgo
-      run: go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@latest
+      run: go install github.com/onsi/ginkgo/v2/ginkgo@v2.2.0
 
     - name: Run Tests
       run: make test
