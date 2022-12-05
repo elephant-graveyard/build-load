@@ -33,20 +33,15 @@ verify:
 .PHONY: test
 test: $(sources)
 	ginkgo \
-	  -r \
-	  -p \
-	  --vv \
+	  --coverprofile=unit.coverprofile \
 	  --randomize-all \
 	  --randomize-suites \
 	  --fail-on-pending \
-	  --nodes=1 \
-	  --compilers=1 \
-	  --slow-spec-threshold=5m \
+	  --keep-going \
+	  --compilers=2 \
 	  --race \
 	  --trace \
-	  --cover \
-	  --coverprofile=coverage.out \
-	  --covermode=atomic
+	  ./...
 
 .PHONY: build
 build: $(sources)
