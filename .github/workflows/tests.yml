@@ -72,6 +72,7 @@ jobs:
     - name: Upload Code Coverage Profile
       uses: codecov/codecov-action@v3
       with:
+        threshold: 2%
         files: unit.coverprofile
         flags: unittests
         fail_ci_if_error: true
