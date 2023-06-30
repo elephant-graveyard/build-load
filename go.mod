@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/gonvenience/bunt v1.3.5
-	github.com/gonvenience/neat v1.3.11
+	github.com/gonvenience/neat v1.3.12
 	github.com/gonvenience/text v1.0.7
 	github.com/gonvenience/wrap v1.1.2
 	github.com/lucasb-eyer/go-colorful v1.2.0
@@ -83,14 +83,14 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
-	golang.org/x/sync v0.2.0 // indirect
+	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect
-	golang.org/x/term v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/term v0.9.0 // indirect
+	golang.org/x/text v0.10.0 // indirect
 	golang.org/x/time v0.1.0 // indirect
-	golang.org/x/tools v0.9.3 // indirect
+	golang.org/x/tools v0.10.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/api v0.122.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
