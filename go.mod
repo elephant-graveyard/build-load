@@ -10,7 +10,7 @@ require (
 	github.com/gonvenience/wrap v1.2.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/onsi/ginkgo/v2 v2.13.0
-	github.com/onsi/gomega v1.28.0
+	github.com/onsi/gomega v1.28.1
 	github.com/shipwright-io/build v0.12.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.17.0
@@ -46,7 +46,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/gonvenience/term v1.0.2 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-containerregistry v0.16.1 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20230323073829-e72429f035bd // indirect
