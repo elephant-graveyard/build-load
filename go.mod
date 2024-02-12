@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/gonvenience/bunt v1.3.5
-	github.com/gonvenience/neat v1.3.12
+	github.com/gonvenience/neat v1.3.13
 	github.com/gonvenience/text v1.0.7
 	github.com/gonvenience/wrap v1.2.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
