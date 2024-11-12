@@ -3,7 +3,7 @@ module github.com/homeport/build-load
 go 1.19
 
 require (
-	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/gonvenience/bunt v1.3.5
 	github.com/gonvenience/neat v1.3.13
 	github.com/gonvenience/text v1.0.7
