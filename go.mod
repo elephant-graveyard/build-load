@@ -6,7 +6,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/gonvenience/bunt v1.4.0
 	github.com/gonvenience/neat v1.3.15
-	github.com/gonvenience/text v1.0.7
+	github.com/gonvenience/text v1.0.8
 	github.com/gonvenience/wrap v1.2.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/onsi/ginkgo/v2 v2.23.0
