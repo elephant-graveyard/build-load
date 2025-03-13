@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/golang-jwt/jwt/v4 v4.5.1
-	github.com/gonvenience/bunt v1.3.5
+	github.com/gonvenience/bunt v1.4.0
 	github.com/gonvenience/neat v1.3.13
 	github.com/gonvenience/text v1.0.7
 	github.com/gonvenience/wrap v1.2.0
@@ -63,7 +63,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mattn/go-ciede2000 v0.0.0-20170301095244-782e8c62fec3 // indirect
-	github.com/mattn/go-isatty v0.0.18 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

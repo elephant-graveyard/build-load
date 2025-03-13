@@ -147,8 +147,8 @@ github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaS
 github.com/golang/protobuf v1.5.2/go.mod h1:XVQd3VNwM+JqD3oG2Ue2ip4fOMUkwXdXDdiuN0vRsmY=
 github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
-github.com/gonvenience/bunt v1.3.5 h1:wSQquifvwEWtzn27k1ngLfeLaStyt0k1b/K6TrlCNAs=
-github.com/gonvenience/bunt v1.3.5/go.mod h1:7ApqkVBEWvX04oJ28Q2WeI/BvJM6VtukaJAU/q/pTs8=
+github.com/gonvenience/bunt v1.4.0 h1:xRAANCgSmQwGoHIyWg80yFgomTiblBayUUSBBPjDHK4=
+github.com/gonvenience/bunt v1.4.0/go.mod h1:J9S2b1ZmUKdvybPxhq0hhrIvAwxcUXJjerudNa2Fhdw=
 github.com/gonvenience/neat v1.3.13 h1:wRp1k0GX5EOpelNH3GyLaFy4SvnJ6k1U5SenmEWkXko=
 github.com/gonvenience/neat v1.3.13/go.mod h1:aE3+z4XlTJ+RzlZxdFiAIIJc1ikYLALAWtX9LqjQ87Q=
 github.com/gonvenience/term v1.0.2 h1:qKa2RydbWIrabGjR/fegJwpW5m+JvUwFL8mLhHzDXn0=
@@ -249,8 +249,8 @@ github.com/mailru/easyjson v0.9.0 h1:PrnmzHw7262yW8sTBwxi1PdJA3Iw/EKBa8psRf7d9a4
 github.com/mailru/easyjson v0.9.0/go.mod h1:1+xMtQp2MRNVL/V1bOzuP3aP8VNwRW55fQUto+XFtTU=
 github.com/mattn/go-ciede2000 v0.0.0-20170301095244-782e8c62fec3 h1:BXxTozrOU8zgC5dkpn3J6NTRdoP+hjok/e+ACr4Hibk=
 github.com/mattn/go-ciede2000 v0.0.0-20170301095244-782e8c62fec3/go.mod h1:x1uk6vxTiVuNt6S5R2UYgdhpj3oKojXvOXauHZ7dEnI=
-github.com/mattn/go-isatty v0.0.18 h1:DOKFKCQ7FNG2L1rbrmstDN4QVRdS89Nkh85u68Uwp98=
-github.com/mattn/go-isatty v0.0.18/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
+github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
+github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/mitchellh/go-ps v1.0.0 h1:i6ampVEEF4wQFF+bkYfwYgY+F/uYJDktmvLPf7qIgjc=
 github.com/mitchellh/go-ps v1.0.0/go.mod h1:J4lOc8z8yJs6vUwklHw2XEIiT4z4C40KtWVN3nvg8Pg=
