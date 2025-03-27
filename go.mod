@@ -14,7 +14,7 @@ require (
 	github.com/onsi/gomega v1.36.3
 	github.com/shipwright-io/build v0.15.3
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	github.com/tektoncd/pipeline v0.68.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.30.9
