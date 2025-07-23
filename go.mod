@@ -12,7 +12,7 @@ require (
 	github.com/gonvenience/wrap v1.2.2
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/onsi/ginkgo/v2 v2.23.4
-	github.com/onsi/gomega v1.37.0
+	github.com/onsi/gomega v1.38.0
 	github.com/shipwright-io/build v0.16.6
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
