@@ -329,8 +329,8 @@ github.com/rogpeppe/go-internal v1.13.1/go.mod h1:uMEvuHeurkdAXX61udpOXGD/AzZDWN
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/sagikazarmark/locafero v0.7.0 h1:5MqpDsTGNDhY8sGp0Aowyf0qKsPrhewaLSsFaodPcyo=
 github.com/sagikazarmark/locafero v0.7.0/go.mod h1:2za3Cg5rMaTMoG/2Ulr9AwtFaIppKXTRYnozin4aB5k=
-github.com/shipwright-io/build v0.16.11 h1:SkEqfMbCK/SEFtpCh1KfR0ejU7OOzjgVH8gP4c0hzTA=
-github.com/shipwright-io/build v0.16.11/go.mod h1:lRtTFAZF75qwkq60rWaW2o+xxkoDA9Hj9Jbb45Z8I/E=
+github.com/shipwright-io/build v0.16.12 h1:1nKORDTq2XF6CdLINX1/cy+p+dJSQt07inSsoVgij9I=
+github.com/shipwright-io/build v0.16.12/go.mod h1:lRtTFAZF75qwkq60rWaW2o+xxkoDA9Hj9Jbb45Z8I/E=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=
