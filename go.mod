@@ -10,7 +10,7 @@ require (
 	github.com/gonvenience/neat v1.3.16
 	github.com/gonvenience/text v1.0.9
 	github.com/gonvenience/wrap v1.2.2
-	github.com/lucasb-eyer/go-colorful v1.2.0
+	github.com/lucasb-eyer/go-colorful v1.3.0
 	github.com/onsi/ginkgo/v2 v2.25.3
 	github.com/onsi/gomega v1.38.2
 	github.com/shipwright-io/build v0.17.0
