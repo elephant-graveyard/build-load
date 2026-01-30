@@ -11,7 +11,7 @@ require (
 	github.com/gonvenience/text v1.0.9
 	github.com/gonvenience/wrap v1.2.2
 	github.com/lucasb-eyer/go-colorful v1.3.0
-	github.com/onsi/ginkgo/v2 v2.28.0
+	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
 	github.com/shipwright-io/build v0.18.2
 	github.com/spf13/cobra v1.10.2
