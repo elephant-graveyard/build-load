@@ -172,8 +172,8 @@ github.com/gonvenience/neat v1.3.16 h1:Vb0iCkSHGWaA+ry69RY3HpQ6Ooo6o/g2wjI80db8D
 github.com/gonvenience/neat v1.3.16/go.mod h1:sLxdQNNluxbpROxTTHs3XBSJX8fwFX5toEULUy74ODA=
 github.com/gonvenience/term v1.0.4 h1:qkCGfmUtpzs9W4jWgNijaGF6dg3oSIh+kZCzT5cPNZY=
 github.com/gonvenience/term v1.0.4/go.mod h1:OzNdQC5NVBou9AifaHd1QG6EP8iDdpaT7GFm1bVgslg=
-github.com/gonvenience/text v1.0.9 h1:U29BxT3NZnNPcfiEnAwt6yHXe38fQs2Q+WTqs1X+atI=
-github.com/gonvenience/text v1.0.9/go.mod h1:JQF1ifXNRaa66jnPLqoITA+y8WATlG0eJzFC9ElJS3s=
+github.com/gonvenience/text v1.0.10 h1:QRqtC/KMk57K7y4jHi4HjLxf8u+tg+/tIRCS5afywNE=
+github.com/gonvenience/text v1.0.10/go.mod h1:qO4aTZGAXbeW7eJXK+94nIc5Uumz8Q5DphOFZex6JHI=
 github.com/gonvenience/wrap v1.2.2 h1:R566hy51XjVx78gIYCe+Zqz8I7WQuw9r1A9ORaxN/ng=
 github.com/gonvenience/wrap v1.2.2/go.mod h1:YGHIulK7mhmU5L9/gHqjsX2SVO2PEZQjgeDxcDj6Das=
 github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
