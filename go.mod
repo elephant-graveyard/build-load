@@ -6,9 +6,9 @@ toolchain go1.24.1
 
 require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
-	github.com/gonvenience/bunt v1.4.2
+	github.com/gonvenience/bunt v1.4.3
 	github.com/gonvenience/neat v1.3.16
-	github.com/gonvenience/text v1.0.9
+	github.com/gonvenience/text v1.0.10
 	github.com/gonvenience/wrap v1.2.2
 	github.com/lucasb-eyer/go-colorful v1.3.0
 	github.com/onsi/ginkgo/v2 v2.28.1
@@ -53,7 +53,7 @@ require (
 	github.com/google/cel-go v0.26.0 // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/pprof v0.0.0-20260115054156-294ebfa9ad83 // indirect
+	github.com/google/pprof v0.0.0-20260202012954-cb029daf43ef // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -91,7 +91,7 @@ require (
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/term v0.39.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
