@@ -174,8 +174,8 @@ github.com/gonvenience/term v1.0.4 h1:qkCGfmUtpzs9W4jWgNijaGF6dg3oSIh+kZCzT5cPNZ
 github.com/gonvenience/term v1.0.4/go.mod h1:OzNdQC5NVBou9AifaHd1QG6EP8iDdpaT7GFm1bVgslg=
 github.com/gonvenience/text v1.0.10 h1:QRqtC/KMk57K7y4jHi4HjLxf8u+tg+/tIRCS5afywNE=
 github.com/gonvenience/text v1.0.10/go.mod h1:qO4aTZGAXbeW7eJXK+94nIc5Uumz8Q5DphOFZex6JHI=
-github.com/gonvenience/wrap v1.2.2 h1:R566hy51XjVx78gIYCe+Zqz8I7WQuw9r1A9ORaxN/ng=
-github.com/gonvenience/wrap v1.2.2/go.mod h1:YGHIulK7mhmU5L9/gHqjsX2SVO2PEZQjgeDxcDj6Das=
+github.com/gonvenience/wrap v1.2.3 h1:8Beeb4aBy7EoYaQ8JW03YwR7TTUUBDnrXoecVbLfXK8=
+github.com/gonvenience/wrap v1.2.3/go.mod h1:XWcAWQ6RtwEbwow0HWEp9fvjG3gGrGxvKi9YwfmCKaM=
 github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/btree v1.0.0/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/cel-go v0.26.0 h1:DPGjXackMpJWH680oGY4lZhYjIameYmR+/6RBdDGmaI=
