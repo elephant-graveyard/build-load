@@ -8,7 +8,7 @@ require (
 	github.com/gonvenience/neat v1.3.18
 	github.com/gonvenience/text v1.0.10
 	github.com/gonvenience/wrap v1.2.3
-	github.com/lucasb-eyer/go-colorful v1.3.0
+	github.com/lucasb-eyer/go-colorful v1.4.0
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
 	github.com/shipwright-io/build v0.19.2
