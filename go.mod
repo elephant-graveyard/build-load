@@ -9,7 +9,7 @@ require (
 	github.com/gonvenience/text v1.0.10
 	github.com/gonvenience/wrap v1.2.3
 	github.com/lucasb-eyer/go-colorful v1.4.0
-	github.com/onsi/ginkgo/v2 v2.28.1
+	github.com/onsi/ginkgo/v2 v2.28.2
 	github.com/onsi/gomega v1.39.1
 	github.com/shipwright-io/build v0.19.2
 	github.com/spf13/cobra v1.10.2
