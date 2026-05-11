@@ -11,7 +11,7 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.4.0
 	github.com/onsi/ginkgo/v2 v2.28.3
 	github.com/onsi/gomega v1.40.0
-	github.com/shipwright-io/build v0.19.3
+	github.com/shipwright-io/build v0.19.4
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/tektoncd/pipeline v1.9.2
